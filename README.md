@@ -53,13 +53,14 @@ A modern, high-performance desktop application and command-line tool for downloa
 
 ---
 
-## 📥 Download & Quick Start (For End Users)
+## 📥 Download & Install (For Windows Users)
 
-If you just want to use the application on Windows, **you do NOT need to install Node.js, Git, or run any commands**:
+If you just want to use the application on Windows, **you do NOT need to install Node.js, Git, or run any terminal commands**:
 
 1. Go to the **[Latest Releases](https://github.com/MazenMohamed05/yt-dlp-gui/releases/latest)** page.
-2. Download **`YouTube-Playlist-Downloader-v1.0.0-Portable.zip`** (or the Setup installer).
-3. Extract the folder and double-click **`YouTube Playlist Downloader.exe`** to start downloading immediately! *(All binary engines `yt-dlp` and `ffmpeg` are pre-bundled)*.
+2. Download the Windows installer: **`YouTube Playlist Downloader Setup 1.0.0.exe`** (under Assets).
+3. Run the setup installer to install the application on your PC.
+4. Launch **YouTube Playlist Downloader** from your Start menu or Desktop shortcut and start downloading! *(All core engines including `yt-dlp` and `ffmpeg` are fully pre-bundled inside)*.
 
 ---
 
