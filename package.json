@@ -38,6 +38,7 @@
     "files": [
       "main.js",
       "preload.js",
+      "renderer.js",
       "index.html",
       "style.css",
       "package.json"
