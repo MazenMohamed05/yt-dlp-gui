@@ -1,11 +1,8 @@
 /**
- * ============================================================================
  * YouTube Playlist Downloader - Electron Preload Script
- * ============================================================================
  * 
  * Safely exposes specific IPC communication channels to the frontend renderer
- * process via Electron's contextBridge. Enforces contextIsolation and prevents
- * direct access to Node.js APIs from client-side scripts.
+ * process via Electron's contextBridge.
  */
 
 const {

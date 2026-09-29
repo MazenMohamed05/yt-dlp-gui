@@ -6,73 +6,72 @@
 [![FFmpeg](https://img.shields.io/badge/Converter-FFmpeg-007808?logo=ffmpeg&logoColor=white)](https://ffmpeg.org/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-A modern, high-performance desktop application and command-line tool for downloading YouTube playlists, channels, or single videos in high quality (up to 4K), extracting audio tracks, and converting subtitles.
+A desktop application and command-line utility for downloading YouTube playlists, channels, or single videos in high quality (up to 4K), extracting audio tracks, and converting subtitles.
 
-> ### 📌 Credits & Attribution / حقوق الملكية والتوثيق
-> - **Desktop GUI & Enhancements by:** Mazen Mohamed (مازن محمد)
-> - **Original Author & Creator:** Amir Haytham ([AmirHaytham/youtube_playlist_downloader](https://github.com/AmirHaytham/youtube_playlist_downloader))
-> - **Note:** This repository builds upon and modernizes the original CLI tool created by Amir Haytham, adding a full Electron desktop GUI, multi-stream DASH progress tracking, and WebVTT to SubRip (.srt) subtitle cleaning.
-
----
-
-## 🌟 Key Features
-
-- **Full Playlist & Single Video Support:** Easily parse and download entire playlists, single videos, or selectively check/uncheck specific videos to download.
-- **High-Quality Video (up to 4K / 2160p):** Automatically downloads separate high-resolution DASH video and audio streams and muxes them into standard `.mp4` using FFmpeg.
-- **Audio Extraction:** Download high-bitrate audio directly (Opus, M4A/AAC, MP3).
-- **Smart Subtitle Processing:** Download subtitles in desired languages and automatically convert WebVTT files into clean, styled SubRip (`.srt`) files.
-- **Unified Progress Indicator:** Provides accurate, continuous 0-100% download progress bars across separate video and audio stream stages.
-- **YouTube Bot Mitigation:** Integrates Deno JavaScript runtime for YouTube n-sig deciphering and client spoofing to prevent 403 Forbidden throttling.
-- **Dual Mode:** Use the interactive **Desktop GUI** or the lightweight **Terminal / CLI script**.
+> **Credits & Attribution:**
+> - Desktop GUI & Enhancements: **Mazen Mohamed**
+> - Original CLI Concept: **Amir Haytham** ([AmirHaytham/youtube_playlist_downloader](https://github.com/AmirHaytham/youtube_playlist_downloader))
+> - Builds upon the original CLI script by adding an Electron desktop interface, multi-stream DASH progress tracking, and selective WebVTT-to-SRT subtitle conversion.
 
 ---
 
-## 📝 Subtitle Processing & Auto-Cleaning (WebVTT to SRT)
+## Features
 
-### The Problem with Default YouTube Subtitles:
-1. **Format Compatibility:** YouTube delivers subtitles in WebVTT (`.vtt`) format, which is not supported by many smart TVs, standalone media players, and older video players that require SubRip (`.srt`).
-2. **Artifacts & Tags:** Raw YouTube subtitles contain inline styling tags (e.g., `<c.colorE5E5E5>`, `<font>`, `<00:00:00.000>`) that render as ugly raw text on most players.
-3. **Rolling Duplicate Cues:** YouTube's automatic captions use rolling line buffers, causing every subtitle line to repeat 2 to 3 times on screen.
-4. **All-or-Nothing in Playlists:** Standard downloaders force downloading subtitles for every single video in a playlist.
-
-### Our Solution:
-- **Intelligent Parser & Converter:** The built-in subtitle engine (`cleanVttToSrt`) automatically parses downloaded `.vtt` files, removes HTML/Karaoke tags, and writes standard SubRip (`.srt`) files with proper comma timestamps (`00:00:00,000`).
-- **De-duplication:** Automatically merges and filters adjacent rolling cues so subtitles display cleanly without repetition.
-- **Selective Playlist Subtitles:** Allows downloading subtitles for **individual selected videos** in a playlist using checkboxes in the GUI, avoiding unnecessary downloads.
+- **Playlists & Single Videos:** Download complete playlists, full channels, single videos, or select specific videos using checkboxes.
+- **High-Quality Video (up to 4K):** Automatically downloads separate high-resolution DASH video and audio streams and muxes them into `.mp4` using FFmpeg.
+- **Audio Extraction:** Download audio directly in high bitrate formats (Opus, M4A/AAC, MP3).
+- **Subtitle Processing:** Download subtitle tracks and convert WebVTT files into clean SubRip (`.srt`) files.
+- **Progress Tracking:** Continuous download and merge progress updates across separate stream stages.
+- **Bot Mitigation:** Uses Deno runtime for YouTube signature deciphering to prevent throttling.
+- **Dual Mode:** Choose between the desktop GUI or the standalone command-line script.
 
 ---
 
-## 🏗️ Architecture & Technology Stack
+## Subtitle Processing (WebVTT to SRT)
 
-- **Frontend UI:** HTML5, Vanilla CSS3, Preload IPC Bridge (`contextBridge`, `contextIsolation`).
-- **Main Process:** Electron, Node.js child_process.
-- **Core Engine:**
-  - `yt-dlp.exe` — YouTube video and metadata extractor.
-  - `ffmpeg.exe` & `ffprobe.exe` — Video/audio stream muxing and format conversion.
-  - `deno.exe` — External JavaScript engine for YouTube signature deciphering.
+### Why Clean Subtitles Matter
+1. **Compatibility:** YouTube provides subtitles in WebVTT (`.vtt`), which is unsupported by many TVs and media players requiring SubRip (`.srt`).
+2. **Tag Removal:** Raw WebVTT captions often contain inline styling tags (e.g., `<c.colorE5E5E5>`, `<00:00:00.000>`) that render as clutter on standard players.
+3. **De-duplication:** YouTube auto-generated captions repeat consecutive lines across rolling line buffers.
+4. **Selective Download:** Rather than forcing subtitle downloads for an entire playlist, you can select only the videos you need.
 
----
-
-## 📥 Download & Install (For Windows Users)
-
-If you just want to use the application on Windows, **you do NOT need to install Node.js, Git, or run any terminal commands**:
-
-1. Go to the **[Latest Releases](https://github.com/MazenMohamed05/yt-dlp-gui/releases/latest)** page.
-2. Download the Windows installer: **`YouTube Playlist Downloader Setup 1.0.0.exe`** (under Assets).
-3. Run the setup installer to install the application on your PC.
-4. Launch **YouTube Playlist Downloader** from your Start menu or Desktop shortcut and start downloading! *(All core engines including `yt-dlp` and `ffmpeg` are fully pre-bundled inside)*.
+The built-in parser strips HTML and timing tags, deduplicates adjacent cues, formats timestamps with standard comma notation (`00:00:00,000`), and saves clean `.srt` files.
 
 ---
 
-## 🛠️ Developer Setup (Building from Source)
+## Architecture
 
-If you are a developer and want to inspect, modify, or build the project from source:
+- **Frontend:** HTML5, CSS3, Preload IPC Bridge (`contextBridge`, `contextIsolation`).
+- **Main Process:** Electron, Node.js child processes.
+- **Engines:**
+  - `yt-dlp.exe` — Video metadata and stream extractor.
+  - `ffmpeg.exe` & `ffprobe.exe` — Video/audio stream muxing.
+  - `deno.exe` — JavaScript runtime for YouTube signature solving.
+
+---
+
+## Download & Installation (Windows)
+
+If you only want to run the application on Windows:
+
+1. Go to the [Releases](https://github.com/MazenMohamed05/yt-dlp-gui/releases/latest) page.
+2. Download **`YouTube Playlist Downloader Setup 1.0.0.exe`**.
+3. Run the installer to set up the app on your computer.
+4. Open **YouTube Playlist Downloader** from your Desktop or Start Menu.
+
+*(All binary dependencies including yt-dlp and ffmpeg are bundled inside the installer).*
+
+---
+
+## Development Setup
+
+To run or build the project from source:
 
 ### Prerequisites
-- [Node.js](https://nodejs.org/) (v18 or higher recommended)
+- [Node.js](https://nodejs.org/) (v18 or higher)
 - [Git](https://git-scm.com/)
 
-### 1. Clone the repository
+### 1. Clone repository
 ```bash
 git clone https://github.com/MazenMohamed05/yt-dlp-gui.git
 cd yt-dlp-gui
@@ -82,52 +81,40 @@ cd yt-dlp-gui
 ```bash
 npm install
 ```
-> **Note on download time:** `npm install` downloads Electron's precompiled desktop binaries (~100MB). Depending on your internet speed, this step may take 1–3 minutes to complete.
 
-### 3. Set Up Binary Tools (`/bin` folder)
-If not already present in the workspace, ensure the required binaries are placed inside the `bin/` directory:
-- `yt-dlp.exe` — [Download latest release](https://github.com/yt-dlp/yt-dlp/releases/latest)
-- `ffmpeg.exe` and `ffprobe.exe` — [Download from Gyan.dev](https://www.gyan.dev/ffmpeg/builds/)
-- `deno.exe` — [Download Deno](https://github.com/denoland/deno/releases/latest)
+### 3. Binary dependencies (`bin/` directory)
+Ensure the following binaries exist in the `bin/` folder:
+- `yt-dlp.exe` — [Download](https://github.com/yt-dlp/yt-dlp/releases/latest)
+- `ffmpeg.exe` and `ffprobe.exe` — [Download](https://www.gyan.dev/ffmpeg/builds/)
+- `deno.exe` — [Download](https://github.com/denoland/deno/releases/latest)
 
 ---
 
-## 💻 Running in Development
+## Running the Application
 
-### 1. Desktop GUI Version (Recommended)
-Launch the Electron desktop application:
+### Desktop GUI
 ```bash
 npm start
 ```
-*Or double-click `start.bat` on Windows.*
+*Or run `start.bat` on Windows.*
 
-### 2. Terminal / CLI Version
-Run the interactive command-line downloader:
+### Command-line Interface
 ```bash
 node downloadPlaylist.js
 ```
 
 ---
 
-## 📦 Building Packaged Installer
+## Building the Installer
 
-To build a standalone Windows installer (`.exe` with NSIS):
+To package the application into a Windows installer:
 ```bash
 npm run dist
 ```
-The installer will be generated in the `dist/` directory.
+The resulting executable will be placed in the `dist/` directory.
 
 ---
 
-## 📄 License
+## License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
-
-## Backlog (User Stories)
-- [x] Add functionality to download video and audio from YouTube playlists.
-- [x] Integrate `yt-dlp` for high-quality video downloads.
-- [x] Integrate `ffmpeg` to merge audio and video files.
-- [x] Add a progress bar to show download status.
-- [x] Add functionality to download all videos from a channel.
-- [ ] Create a setup script for easier installation.
-- [ ] Add error handling for unsupported formats or unavailable videos.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.

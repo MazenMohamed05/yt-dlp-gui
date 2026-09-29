@@ -6,8 +6,7 @@
   "scripts": {
     "start": "electron .",
     "dist": "electron-builder --win",
-    "dist:win": "electron-builder --win",
-    "dist:protected": "node scripts/build-protected.js"
+    "dist:win": "electron-builder --win"
   },
   "repository": {
     "type": "git",
@@ -28,8 +27,7 @@
   "author": "Mazen Mohamed (Original by Amir Haytham)",
   "devDependencies": {
     "electron": "^43.3.0",
-    "electron-builder": "^25.1.8",
-    "javascript-obfuscator": "^5.7.0"
+    "electron-builder": "^25.1.8"
   },
   "build": {
     "appId": "com.mazenmohamed.youtubeplaylistdownloader",

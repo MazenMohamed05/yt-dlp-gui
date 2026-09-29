@@ -1,20 +1,9 @@
 /**
- * ============================================================================
  * YouTube Playlist Downloader - Electron Main Process
- * ============================================================================
- * 
- * This file serves as the main process controller for the YouTube Playlist
- * Downloader application. It manages:
- *  - Native application lifecycle and BrowserWindow creation.
- *  - Inter-Process Communication (IPC) handlers for URL analysis, media
- *    downloads, and subtitle processing.
- *  - Child process execution of bundled CLI tools (yt-dlp, ffmpeg, ffprobe, deno).
- *  - Unified progress calculation for multi-stream downloads (combining separate
- *    video and audio streams).
- *  - Subtitle parsing, cleaning, and conversion from WebVTT to SubRip (.srt).
+ *
+ * Handles native application lifecycle, BrowserWindow creation, IPC communication,
+ * and child process execution for media downloading and subtitle processing.
  */
-
-console.log("🔥 MAIN.JS IS RUNNING");
 
 const {
     app,
