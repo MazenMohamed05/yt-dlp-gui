@@ -1,0 +1,919 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+
+body {
+    font-family:
+        "Segoe UI",
+        Arial,
+        sans-serif;
+
+    background: #111318;
+
+    color: #f5f5f5;
+
+    min-height: 100vh;
+}
+
+
+.app {
+    min-height: 100vh;
+
+    display: flex;
+
+    flex-direction: column;
+}
+
+
+/* =========================
+   HEADER
+========================= */
+
+.header {
+    height: 76px;
+
+    display: flex;
+
+    align-items: center;
+
+    padding: 0 36px;
+
+    background: #181a20;
+
+    border-bottom:
+        1px solid #292c34;
+}
+
+
+.logo {
+    display: flex;
+
+    align-items: center;
+
+    gap: 14px;
+}
+
+
+.logo-icon {
+    width: 42px;
+
+    height: 42px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 10px;
+
+    background: #ff0033;
+
+    color: white;
+
+    font-size: 20px;
+}
+
+
+.logo h1 {
+    font-size: 20px;
+
+    font-weight: 600;
+
+    letter-spacing: -0.3px;
+}
+
+
+.logo span {
+    display: block;
+
+    margin-top: 3px;
+
+    color: #8f949e;
+
+    font-size: 12px;
+}
+
+
+/* =========================
+   MAIN
+========================= */
+
+.main {
+    flex: 1;
+
+    display: flex;
+
+    justify-content: center;
+
+    padding: 50px 20px;
+}
+
+
+.download-card {
+    width: 100%;
+
+    max-width: 900px;
+
+    background: #191c22;
+
+    border:
+        1px solid #292d36;
+
+    border-radius: 18px;
+
+    padding: 34px;
+
+    box-shadow:
+        0 20px 60px
+        rgba(0, 0, 0, 0.35);
+}
+
+
+.download-card h2 {
+    font-size: 27px;
+
+    margin-bottom: 8px;
+}
+
+
+.description {
+    color: #8f949e;
+
+    font-size: 14px;
+
+    margin-bottom: 28px;
+}
+
+
+/* =========================
+   URL
+========================= */
+
+.url-container {
+    display: flex;
+
+    gap: 10px;
+
+    margin-bottom: 14px;
+}
+
+
+.url-container input {
+    flex: 1;
+
+    height: 50px;
+
+    padding: 0 16px;
+
+    border:
+        1px solid #343842;
+
+    border-radius: 9px;
+
+    background: #111318;
+
+    color: #ffffff;
+
+    outline: none;
+
+    font-size: 14px;
+}
+
+
+.url-container input:focus {
+    border-color: #ff0033;
+}
+
+
+.url-container button {
+    width: 90px;
+
+    border: none;
+
+    border-radius: 9px;
+
+    background: #292d36;
+
+    color: #ffffff;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+
+.url-container button:hover {
+    background: #343943;
+}
+
+
+/* =========================
+   BUTTONS
+========================= */
+
+.primary-button {
+    width: 100%;
+
+    height: 48px;
+
+    border: none;
+
+    border-radius: 9px;
+
+    background: #ff0033;
+
+    color: white;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+
+.primary-button:hover {
+    background: #e6002d;
+}
+
+
+.primary-button:active {
+    transform: scale(0.99);
+}
+
+
+/* =========================
+   SECTION
+========================= */
+
+.section {
+    margin-top: 34px;
+}
+
+
+.section h3,
+.quality-section h3,
+.location-section h3 {
+    font-size: 14px;
+
+    font-weight: 600;
+
+    margin-bottom: 12px;
+}
+
+
+/* =========================
+   TYPE CARDS
+========================= */
+
+.type-grid {
+    display: grid;
+
+    grid-template-columns:
+        repeat(3, 1fr);
+
+    gap: 12px;
+}
+
+
+.type-card {
+    min-height: 115px;
+
+    display: flex;
+
+    flex-direction: column;
+
+    align-items: center;
+
+    justify-content: center;
+
+    gap: 6px;
+
+    border:
+        1px solid #30343e;
+
+    border-radius: 11px;
+
+    background: #14161b;
+
+    color: white;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+
+.type-card:hover {
+    border-color: #555b67;
+
+    background: #1b1e25;
+}
+
+
+.type-card.active {
+    border-color: #ff0033;
+
+    background:
+        rgba(255, 0, 51, 0.08);
+}
+
+
+.type-icon {
+    font-size: 25px;
+}
+
+
+.type-title {
+    font-size: 14px;
+
+    font-weight: 600;
+}
+
+
+.type-description {
+    color: #858b96;
+
+    font-size: 11px;
+}
+
+
+/* =========================
+   STATUS
+========================= */
+
+.status {
+    display: flex;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin-top: 24px;
+
+    padding: 13px 15px;
+
+    border-radius: 9px;
+
+    background: #111318;
+
+    color: #b9bec8;
+
+    font-size: 13px;
+}
+
+
+.status-spinner {
+    width: 16px;
+
+    height: 16px;
+
+    border:
+        2px solid #393d46;
+
+    border-top-color: #ff0033;
+
+    border-radius: 50%;
+
+    animation:
+        spin 0.8s linear infinite;
+}
+
+/* =========================
+   DOWNLOAD PROGRESS
+========================= */
+
+.download-progress {
+    width: 100%;
+    margin-top: 10px;
+}
+
+
+.progress-info {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    gap: 10px;
+
+    margin-bottom: 7px;
+
+    font-size: 12px;
+
+    color: #b9bec8;
+}
+
+
+.progress-info span {
+    white-space: nowrap;
+}
+
+
+.progress-bar {
+    width: 100%;
+
+    height: 8px;
+
+    overflow: hidden;
+
+    border-radius: 999px;
+
+    background: #292d36;
+}
+
+
+.progress-bar-fill {
+    width: 0%;
+
+    height: 100%;
+
+    border-radius: 999px;
+
+    background: #ff0033;
+
+    transition: width 0.2s ease;
+}
+
+
+.progress-details {
+    display: flex;
+
+    justify-content: space-between;
+
+    align-items: center;
+
+    margin-top: 6px;
+
+    font-size: 11px;
+
+    color: #7f8590;
+}
+
+
+@keyframes spin {
+
+    to {
+        transform: rotate(360deg);
+    }
+
+}
+
+
+.hidden {
+    display: none !important;
+}
+
+
+/* =========================
+   RESULT
+========================= */
+
+.result {
+    margin-top: 30px;
+
+    padding-top: 28px;
+
+    border-top:
+        1px solid #2c3038;
+}
+
+
+.result-header {
+    margin-bottom: 18px;
+}
+
+
+.result-header h3 {
+    font-size: 17px;
+}
+
+
+.video-info {
+    display: flex;
+
+    gap: 18px;
+
+    padding: 16px;
+
+    border-radius: 12px;
+
+    background: #13151a;
+
+    border:
+        1px solid #292d36;
+}
+
+
+.thumbnail {
+    width: 190px;
+
+    height: 108px;
+
+    flex-shrink: 0;
+
+    overflow: hidden;
+
+    border-radius: 8px;
+}
+
+
+.thumbnail-placeholder {
+    width: 100%;
+
+    height: 100%;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: center;
+
+    background: #252932;
+
+    color: #737985;
+
+    font-size: 30px;
+}
+
+
+.info-details {
+    flex: 1;
+}
+
+
+.info-details h4 {
+    font-size: 16px;
+
+    margin-bottom: 14px;
+}
+
+
+.info-row {
+    display: flex;
+
+    justify-content: space-between;
+
+    max-width: 350px;
+
+    margin-top: 7px;
+
+    font-size: 12px;
+}
+
+
+.info-row span {
+    color: #7f8590;
+}
+
+
+/* =========================
+   QUALITY
+========================= */
+
+.quality-section {
+    margin-top: 24px;
+}
+
+
+.quality-section select {
+    width: 100%;
+
+    height: 46px;
+
+    padding: 0 13px;
+
+    border:
+        1px solid #343842;
+
+    border-radius: 8px;
+
+    background: #111318;
+
+    color: white;
+
+    outline: none;
+
+    cursor: pointer;
+}
+
+
+/* =========================
+   LOCATION
+========================= */
+
+.location-section {
+    margin-top: 22px;
+}
+
+
+.location-container {
+    display: flex;
+
+    gap: 10px;
+}
+
+
+.location-container input {
+    flex: 1;
+
+    height: 46px;
+
+    padding: 0 13px;
+
+    border:
+        1px solid #343842;
+
+    border-radius: 8px;
+
+    background: #111318;
+
+    color: #bfc3cb;
+
+    outline: none;
+}
+
+
+.location-container button {
+    width: 90px;
+
+    border: none;
+
+    border-radius: 8px;
+
+    background: #292d36;
+
+    color: white;
+
+    cursor: pointer;
+}
+
+
+/* =========================
+   DOWNLOAD
+========================= */
+
+.download-button {
+    width: 100%;
+
+    height: 50px;
+
+    margin-top: 25px;
+
+    border: none;
+
+    border-radius: 9px;
+
+    background: #ff0033;
+
+    color: white;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition: 0.2s;
+}
+
+
+.download-button:hover {
+    background: #e6002d;
+}
+
+
+/* =========================
+   FOOTER
+========================= */
+
+.footer {
+    height: 45px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    padding: 0 30px;
+
+    color: #666c77;
+
+    font-size: 11px;
+
+    border-top:
+        1px solid #252830;
+}
+
+
+/* =========================
+   RESPONSIVE
+========================= */
+
+@media (max-width: 700px) {
+
+    .download-card {
+        padding: 22px;
+    }
+
+
+    .type-grid {
+        grid-template-columns: 1fr;
+    }
+
+
+    .video-info {
+        flex-direction: column;
+    }
+
+
+    .thumbnail {
+        width: 100%;
+
+        height: 180px;
+    }
+
+
+    .footer {
+        display: none;
+    }
+
+}
+/* ========================================
+   Playlist Summary
+======================================== */
+
+.playlist-summary {
+
+    margin-top: 24px;
+
+    padding: 20px 24px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+
+    gap: 20px;
+
+    background: #14161c;
+
+    border: 1px solid #30343d;
+
+    border-radius: 16px;
+
+}
+
+
+.playlist-summary-info {
+
+    display: flex;
+
+    flex-direction: column;
+
+    gap: 6px;
+
+}
+
+
+.playlist-summary-info h3 {
+
+    margin: 0;
+
+    font-size: 22px;
+
+    font-weight: 700;
+
+}
+
+
+.playlist-summary-info span {
+
+    color: #9da3b0;
+
+    font-size: 15px;
+
+}
+
+
+.playlist-toggle-button {
+
+    border: 1px solid #3a3f4a;
+
+    border-radius: 10px;
+
+    padding: 10px 18px;
+
+    background: #252934;
+
+    color: #ffffff;
+
+    font-size: 15px;
+
+    font-weight: 600;
+
+    cursor: pointer;
+
+    transition:
+        background 0.2s ease,
+        border-color 0.2s ease,
+        transform 0.2s ease;
+
+}
+
+
+.playlist-toggle-button:hover {
+
+    background: #303541;
+
+    border-color: #ff0033;
+
+}
+
+
+.playlist-toggle-button:active {
+
+    transform: scale(0.97);
+
+}
+/* ========================================
+   Playlist Videos List
+======================================== */
+
+.playlist-list {
+
+    margin-top: 18px;
+
+    max-height: 260px;
+
+    overflow-y: auto;
+
+    border-top: 1px solid #30343d;
+
+    padding-top: 10px;
+
+}
+
+
+.playlist-item {
+
+    display: grid;
+
+    grid-template-columns:
+        40px
+        minmax(0, 1fr)
+        70px;
+
+    align-items: center;
+
+    gap: 10px;
+
+    padding: 10px 8px;
+
+    border-bottom: 1px solid #252932;
+
+}
+
+
+.playlist-item-number {
+
+    color: #8f96a3;
+
+    font-size: 14px;
+
+}
+
+
+.playlist-item-title {
+
+    color: #ffffff;
+
+    font-size: 14px;
+
+    white-space: nowrap;
+
+    overflow: hidden;
+
+    text-overflow: ellipsis;
+
+}
+
+
+.playlist-item-duration {
+
+    color: #8f96a3;
+
+    font-size: 13px;
+
+    text-align: right;
+
+}

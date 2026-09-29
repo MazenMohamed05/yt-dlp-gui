@@ -1,96 +1,117 @@
 # YouTube Playlist Downloader
 
-This repository provides a script for downloading YouTube playlists, channels, or individual videos as high-quality video files. The script utilizes `yt-dlp` and `ffmpeg` to download and merge video and audio files into a single, unified file.
+[![Electron](https://img.shields.io/badge/Electron-v43.3.0-47848F?logo=electron&logoColor=white)](https://www.electronjs.org/)
+[![Node.js](https://img.shields.io/badge/Node.js-v18+-339933?logo=node.js&logoColor=white)](https://nodejs.org/)
+[![yt-dlp](https://img.shields.io/badge/Engine-yt--dlp-FF0000?logo=youtube&logoColor=white)](https://github.com/yt-dlp/yt-dlp)
+[![FFmpeg](https://img.shields.io/badge/Converter-FFmpeg-007808?logo=ffmpeg&logoColor=white)](https://ffmpeg.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## Table of Contents
-- [Features](#features)
-- [Motivation](#motivation)
-- [Installation](#installation)
-  - [Prerequisites](#prerequisites)
-  - [Clone the Repository](#clone-the-repository)
-  - [Install Required Dependencies](#install-required-dependencies)
-  - [Download and Set Up Tools](#download-and-set-up-tools)
-- [Usage](#usage)
-- [Backlog (User Stories)](#backlog-user-stories)
-- [License](#license)
+A modern, high-performance desktop application and command-line tool for downloading YouTube playlists, channels, or single videos in high quality (up to 4K), extracting audio tracks, and converting subtitles.
 
-## Features
-- Download YouTube playlists, individual videos, or all videos from a channel.
-- Download videos in high-quality (up to 1080p).
-- Automatically merge video and audio using `ffmpeg`.
-- Show download progress in the terminal with an easy-to-read progress bar.
+> ### 📌 Credits & Attribution / حقوق الملكية والتوثيق
+> - **Desktop GUI & Enhancements by:** Mazen Mohamed (مازن محمد)
+> - **Original Author & Creator:** Amir Haytham ([AmirHaytham/youtube_playlist_downloader](https://github.com/AmirHaytham/youtube_playlist_downloader))
+> - **Note:** This repository builds upon and modernizes the original CLI tool created by Amir Haytham, adding a full Electron desktop GUI, multi-stream DASH progress tracking, and WebVTT to SubRip (.srt) subtitle cleaning.
 
-## Motivation
-I created this script because I needed to download some educational courses from YouTube for offline viewing. Specifically, I wanted to download:
+---
 
-1. A YouTube playlist containing AWS courses: [AWS Course Playlist](https://www.youtube.com/watch?v=E3nLSHQtLes&list=PLOoZRfEtk6kWSM_l9xMjDh-_MJXl03-pf).
-2. Another English course by Mr. Ihab Ramzi, available on his channel: [Ihab Ramzi's Channel](https://www.youtube.com/@IhabRamziyallaspeak/featured).
+## 🌟 Key Features
 
-This script allows you to provide a link to an individual video, a playlist, or even the entire videos page of a channel, such as [Ihab Ramzi's Videos](https://www.youtube.com/@IhabRamziyallaspeak/videos), and it can download all the videos efficiently.
+- **Full Playlist & Single Video Support:** Easily parse and download entire playlists, single videos, or selectively check/uncheck specific videos to download.
+- **High-Quality Video (up to 4K / 2160p):** Automatically downloads separate high-resolution DASH video and audio streams and muxes them into standard `.mp4` using FFmpeg.
+- **Audio Extraction:** Download high-bitrate audio directly (Opus, M4A/AAC, MP3).
+- **Smart Subtitle Processing:** Download subtitles in desired languages and automatically convert WebVTT files into clean, styled SubRip (`.srt`) files.
+- **Unified Progress Indicator:** Provides accurate, continuous 0-100% download progress bars across separate video and audio stream stages.
+- **YouTube Bot Mitigation:** Integrates Deno JavaScript runtime for YouTube n-sig deciphering and client spoofing to prevent 403 Forbidden throttling.
+- **Dual Mode:** Use the interactive **Desktop GUI** or the lightweight **Terminal / CLI script**.
 
-## Installation
+---
+
+## 📝 Subtitle Processing & Auto-Cleaning (WebVTT to SRT)
+
+### The Problem with Default YouTube Subtitles:
+1. **Format Compatibility:** YouTube delivers subtitles in WebVTT (`.vtt`) format, which is not supported by many smart TVs, standalone media players, and older video players that require SubRip (`.srt`).
+2. **Artifacts & Tags:** Raw YouTube subtitles contain inline styling tags (e.g., `<c.colorE5E5E5>`, `<font>`, `<00:00:00.000>`) that render as ugly raw text on most players.
+3. **Rolling Duplicate Cues:** YouTube's automatic captions use rolling line buffers, causing every subtitle line to repeat 2 to 3 times on screen.
+4. **All-or-Nothing in Playlists:** Standard downloaders force downloading subtitles for every single video in a playlist.
+
+### Our Solution:
+- **Intelligent Parser & Converter:** The built-in subtitle engine (`cleanVttToSrt`) automatically parses downloaded `.vtt` files, removes HTML/Karaoke tags, and writes standard SubRip (`.srt`) files with proper comma timestamps (`00:00:00,000`).
+- **De-duplication:** Automatically merges and filters adjacent rolling cues so subtitles display cleanly without repetition.
+- **Selective Playlist Subtitles:** Allows downloading subtitles for **individual selected videos** in a playlist using checkboxes in the GUI, avoiding unnecessary downloads.
+
+---
+
+## 🏗️ Architecture & Technology Stack
+
+- **Frontend UI:** HTML5, Vanilla CSS3, Preload IPC Bridge (`contextBridge`, `contextIsolation`).
+- **Main Process:** Electron, Node.js child_process.
+- **Core Engine:**
+  - `yt-dlp.exe` — YouTube video and metadata extractor.
+  - `ffmpeg.exe` & `ffprobe.exe` — Video/audio stream muxing and format conversion.
+  - `deno.exe` — External JavaScript engine for YouTube signature deciphering.
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- **Node.js**: Download and install Node.js from the [official Node.js website](https://nodejs.org/).
-- **Python**: `yt-dlp` requires Python. Install it from the [official Python website](https://www.python.org/downloads/) and add it to your system PATH.
 
-To verify the installations, open a terminal and run:
+1. **Node.js** (v18 or higher recommended): [Download from official website](https://nodejs.org/).
+2. **Git**: [Download Git](https://git-scm.com/).
 
-```bash
-node -v
-npm -v
-python --version
-```
+### Installation
 
-### Clone the Repository
-Clone the repository to your local machine and navigate into the project directory:
-
-```bash
-git clone https://github.com/AmirHaytham/youtube_playlist_downloader.git
-cd youtube_playlist_downloader
-```
-
-### Install Required Dependencies
-Install the required Node.js packages:
-
-```bash
-npm install progress
-```
-
-### Download and Set Up Tools
-
-- **Download `yt-dlp`**:
-  - Visit the [yt-dlp releases page](https://github.com/yt-dlp/yt-dlp/releases/latest) and download the `yt-dlp.exe` file.
-  - Save `yt-dlp.exe` in a directory, such as `C:\yt-dlp\`.
-
-- **Download `ffmpeg`**:
-  - Visit the [ffmpeg download page](https://ffmpeg.org/download.html), and download a Windows build (e.g., from gyan.dev).
-  - Extract the downloaded ZIP file and locate `ffmpeg.exe` in the `bin` folder.
-  - Move `ffmpeg.exe` to a directory, such as `C:\ffmpeg\bin\`.
-
-### Add `yt-dlp` and `ffmpeg` to Your Script
-Update the script file (`downloadPlaylist.js`) with the correct paths to `yt-dlp` and `ffmpeg`:
-
-```javascript
-// Paths to yt-dlp and ffmpeg executables
-const ytDlpPath = 'C:\\yt-dlp\\yt-dlp.exe'; // Update to the actual path where yt-dlp.exe is located
-const ffmpegPath = 'C:\\ffmpeg\\bin\\ffmpeg.exe'; // Update to the actual path where ffmpeg.exe is located
-```
-
-## Usage
-1. Set the desired playlist, video, or channel URL in the `playlistUrl` variable within the script.
-
-   Example URLs:
-   - Playlist URL: `https://www.youtube.com/watch?v=E3nLSHQtLes&list=PLOoZRfEtk6kWSM_l9xMjDh-_MJXl03-pf`
-   - Channel videos page: `https://www.youtube.com/@IhabRamziyallaspeak/videos`
-
-2. Run the script to start downloading videos:
-
+1. **Clone the repository:**
    ```bash
-   node downloadPlaylist.js
+   git clone https://github.com/<your-username>/youtube_playlist_downloader.git
+   cd youtube_playlist_downloader
    ```
 
-   This command will start the download process, showing progress for each video in the terminal.
+2. **Install dependencies:**
+   ```bash
+   npm install
+   ```
+
+3. **Set Up Binary Tools (`/bin` folder):**
+   Place the following executable binaries into the `bin/` directory in the project root:
+   - `yt-dlp.exe` — [Download latest release](https://github.com/yt-dlp/yt-dlp/releases/latest)
+   - `ffmpeg.exe` and `ffprobe.exe` — [Download from Gyan.dev](https://www.gyan.dev/ffmpeg/builds/)
+   - `deno.exe` — [Download Deno](https://github.com/denoland/deno/releases/latest)
+
+---
+
+## 💻 Running the Application
+
+### 1. Desktop GUI Version (Recommended)
+Launch the Electron desktop application:
+```bash
+npm start
+```
+*Or double-click `start.bat` on Windows.*
+
+### 2. Terminal / CLI Version
+Run the interactive command-line downloader:
+```bash
+node downloadPlaylist.js
+```
+*Or double-click `start-downloader.bat` on Windows.*
+
+---
+
+## 📦 Building Packaged Installer
+
+To build a standalone Windows installer (`.exe` with NSIS):
+```bash
+npm run dist
+```
+The installer will be generated in the `dist/` directory.
+
+---
+
+## 📄 License
+
+This project is licensed under the MIT License - see the LICENSE file for details.
 
 ## Backlog (User Stories)
 - [x] Add functionality to download video and audio from YouTube playlists.

@@ -1,0 +1,3593 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta
+        name="viewport"
+        content="width=device-width, initial-scale=1.0"
+    >
+
+    <title>YouTube Downloader</title>
+
+    <link
+        rel="stylesheet"
+        href="style.css"
+    >
+
+
+    <style id="playlist-approved-layout">
+
+        /* ========================================
+           Approved Playlist Layout
+        ======================================== */
+
+        .video-info {
+
+            display: grid !important;
+
+            grid-template-columns:
+                280px
+                minmax(0, 1fr)
+                minmax(260px, 360px);
+
+            gap: 26px;
+
+            align-items: center;
+
+        }
+
+
+        .playlist-summary {
+
+            min-width: 0;
+
+            display: grid;
+
+            grid-template-columns:
+                minmax(0, 1fr)
+                auto;
+
+            grid-template-areas:
+                "summary button";
+
+            align-items: center;
+
+            gap: 18px;
+
+            padding: 22px;
+
+            background: #14161c;
+
+            border: 1px solid #30343d;
+
+            border-radius: 16px;
+
+        }
+
+
+        .playlist-summary-info {
+
+            grid-area: summary;
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 6px;
+
+        }
+
+
+        .playlist-summary-info h3 {
+
+            margin: 0;
+
+            font-size: 22px;
+
+        }
+
+
+        .playlist-summary-info span {
+
+            color: #9da3b0;
+
+            font-size: 15px;
+
+        }
+
+
+        .playlist-list {
+
+            min-width: 0;
+
+            width: 100%;
+
+            max-height: 300px;
+
+            overflow-y: auto;
+
+            padding: 4px 4px 4px 0;
+
+        }
+
+
+        .playlist-item {
+
+            display: grid;
+
+            grid-template-columns:
+                24px
+                38px
+                minmax(0, 1fr)
+                70px;
+
+            gap: 12px;
+
+            align-items: center;
+
+            padding: 11px 8px;
+
+            border-bottom: 1px solid #292d35;
+
+        }
+
+
+        .playlist-checkbox {
+
+            width: 17px;
+
+            height: 17px;
+
+            margin: 0;
+
+            cursor: pointer;
+
+            accent-color: #ff0033;
+
+        }
+
+
+        .playlist-selection-bar {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 16px;
+
+            padding: 10px 8px 14px;
+
+            margin-bottom: 4px;
+
+            border-bottom: 1px solid #30343d;
+
+        }
+
+
+        .playlist-select-all {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 9px;
+
+            color: #ffffff;
+
+            font-size: 14px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+        }
+
+
+        .playlist-select-all input {
+
+            width: 17px;
+
+            height: 17px;
+
+            margin: 0;
+
+            cursor: pointer;
+
+            accent-color: #ff0033;
+
+        }
+
+
+        .playlist-selected-count {
+
+            color: #8f96a3;
+
+            font-size: 13px;
+
+        }
+
+
+        .playlist-selection-bar {
+
+            flex-wrap: wrap;
+
+        }
+
+
+        .playlist-number {
+
+            color: #8f96a3;
+
+            font-size: 14px;
+
+        }
+
+
+        .playlist-title {
+
+            min-width: 0;
+
+            color: #ffffff;
+
+            font-size: 14px;
+
+            line-height: 1.45;
+
+            overflow: hidden;
+
+            text-overflow: ellipsis;
+
+            white-space: nowrap;
+
+        }
+
+
+        .playlist-duration {
+
+            color: #8f96a3;
+
+            font-size: 13px;
+
+            text-align: right;
+
+        }
+
+
+        .playlist-toggle-button {
+
+            grid-area: button;
+
+            border: 1px solid #3a3f4a;
+
+            border-radius: 10px;
+
+            padding: 10px 18px;
+
+            background: #252934;
+
+            color: #ffffff;
+
+            font-size: 15px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            white-space: nowrap;
+
+        }
+
+
+        .playlist-toggle-button:hover {
+
+            background: #303541;
+
+            border-color: #ff0033;
+
+        }
+
+
+        /* ========================================
+           Expanded State
+        ======================================== */
+
+        .video-info.playlist-expanded {
+
+            grid-template-columns:
+                280px
+                minmax(0, 1fr);
+
+            grid-template-areas:
+                "thumbnail details"
+                "playlist playlist";
+
+            align-items: start;
+
+        }
+
+
+        .video-info.playlist-expanded
+        .thumbnail {
+
+            grid-area: thumbnail;
+
+        }
+
+
+        .video-info.playlist-expanded
+        .info-details {
+
+            grid-area: details;
+
+        }
+
+
+        .video-info.playlist-expanded
+        .playlist-summary {
+
+            grid-area: playlist;
+
+            display: grid;
+
+            grid-template-columns: 1fr;
+
+            grid-template-areas:
+                "selection"
+                "list"
+                "button";
+
+            gap: 12px;
+
+            padding: 18px 0 0 0;
+
+            background: transparent;
+
+            border: 0;
+
+            border-top: 1px solid #30343d;
+
+            border-radius: 0;
+
+        }
+
+
+        .video-info.playlist-expanded
+        .playlist-selection-bar {
+
+            grid-area: selection;
+
+        }
+
+
+        .video-info.playlist-expanded
+        .playlist-list {
+
+            grid-area: list;
+
+            max-height: 300px;
+
+        }
+
+
+        .video-info.playlist-expanded
+        .playlist-toggle-button {
+
+            grid-area: button;
+
+            justify-self: start;
+
+        }
+
+
+        @media (max-width: 850px) {
+
+            .video-info,
+            .video-info.playlist-expanded {
+
+                grid-template-columns:
+                    1fr;
+
+            }
+
+            .video-info.playlist-expanded
+            .thumbnail,
+            .video-info.playlist-expanded
+            .info-details,
+            .video-info.playlist-expanded
+            .playlist-summary {
+
+                grid-area: auto;
+
+            }
+
+        }
+
+    </style>
+
+</head>
+
+
+<body>
+
+    <div class="app">
+
+
+        <!-- ========================================
+             Header
+        ========================================= -->
+
+        <header class="header">
+
+            <div class="logo">
+
+                <div class="logo-icon">
+                    ▶
+                </div>
+
+                <div>
+
+                    <h1>
+                        YouTube Downloader
+                    </h1>
+
+                    <span>
+                        Fast & Simple Media Downloader
+                    </span>
+
+                </div>
+
+            </div>
+
+        </header>
+
+
+        <!-- ========================================
+             Main
+        ========================================= -->
+
+        <main class="main">
+
+            <section class="download-card">
+
+
+                <h2>
+                    Download from YouTube
+                </h2>
+
+
+                <p class="description">
+
+                    Paste a YouTube video or playlist
+
+                </p>
+
+
+                <!-- ========================================
+                     URL
+                ========================================= -->
+
+                <div class="url-container">
+
+                    <input
+                        id="urlInput"
+                        type="text"
+                        placeholder="Paste YouTube URL here..."
+                        autocomplete="off"
+                    >
+
+
+                    <button id="pasteButton">
+
+                        Paste
+
+                    </button>
+
+                </div>
+
+
+                <!-- ========================================
+                     Analyze
+                ========================================= -->
+
+                <button
+                    id="analyzeButton"
+                    class="primary-button"
+                >
+
+                    Analyze URL
+
+                </button>
+
+
+                <!-- ========================================
+                     Download Type
+                ========================================= -->
+
+                <div class="section">
+
+                    <h3>
+                        Download Type
+                    </h3>
+
+
+                    <div class="type-grid">
+
+
+                        <!-- Video -->
+
+                        <button
+                            class="type-card active"
+                            data-type="video"
+                        >
+
+                            <span class="type-icon">
+                                🎬
+                            </span>
+
+
+                            <span class="type-title">
+
+                                Video
+
+                            </span>
+
+
+                            <span class="type-description">
+
+                                Download video
+
+                            </span>
+
+                        </button>
+
+
+                        <!-- Audio -->
+
+                        <button
+                            class="type-card"
+                            data-type="audio"
+                        >
+
+                            <span class="type-icon">
+                                🎵
+                            </span>
+
+
+                            <span class="type-title">
+
+                                Audio
+
+                            </span>
+
+
+                            <span class="type-description">
+
+                                Extract audio
+
+                            </span>
+
+                        </button>
+
+
+                        <!-- Subtitles -->
+
+                        <button
+                            class="type-card"
+                            data-type="subtitle"
+                        >
+
+                            <span class="type-icon">
+                                💬
+                            </span>
+
+
+                            <span class="type-title">
+
+                                Subtitles
+
+                            </span>
+
+
+                            <span class="type-description">
+
+                                Download subtitles
+
+                            </span>
+
+                        </button>
+
+
+                    </div>
+
+                </div>
+
+
+                <!-- ========================================
+                     Status
+                ========================================= -->
+
+                <div
+                    id="status"
+                    class="status hidden"
+                >
+
+                    <div class="status-spinner"></div>
+
+
+                    <span id="statusText">
+
+                        Ready
+
+                    </span>
+                    <div
+    id="downloadProgress"
+    class="download-progress hidden"
+>
+
+    <div class="progress-info">
+
+        <span id="progressPercent">
+            0%
+        </span>
+
+        <span id="progressSpeed">
+            --
+        </span>
+
+        <span id="progressEta">
+            --
+        </span>
+
+    </div>
+
+
+    <div class="progress-bar">
+
+        <div
+            id="progressBarFill"
+            class="progress-bar-fill"
+        ></div>
+
+    </div>
+
+
+    <div class="progress-details">
+
+        <span id="progressDownloaded">
+            --
+        </span>
+
+        <span id="progressTotal">
+            --
+        </span>
+
+    </div>
+
+</div>
+
+                </div>
+
+
+                <!-- ========================================
+                     Analysis Result
+                ========================================= -->
+
+                <div
+                    id="result"
+                    class="result hidden"
+                >
+
+
+                    <div class="result-header">
+
+                        <h3>
+
+                            Video Information
+
+                        </h3>
+
+                    </div>
+
+
+                    <!-- ========================================
+                         Video Information
+                    ========================================= -->
+
+                    <div class="video-info">
+
+
+                        <div class="thumbnail">
+
+                            <div class="thumbnail-placeholder">
+
+                                ▶
+
+                            </div>
+
+                        </div>
+
+
+                        <div class="info-details">
+
+
+                            <h4 id="videoTitle">
+
+                                Video title
+
+                            </h4>
+
+
+                            <div class="info-row">
+
+                                <span>
+                                    Type
+                                </span>
+
+
+                                <strong id="videoType">
+
+                                    Video
+
+                                </strong>
+
+                            </div>
+
+
+                            <div class="info-row">
+
+                                <span>
+                                    Duration
+                                </span>
+
+
+                                <strong id="videoDuration">
+
+                                    --
+
+                                </strong>
+
+                            </div>
+
+
+                            <div class="info-row">
+
+                                <span>
+                                    Estimated Size
+                                </span>
+
+
+                                <strong id="videoSize">
+
+                                    --
+
+                                </strong>
+
+                            </div>
+
+
+                        </div>
+                        <!-- ========================================
+                             Playlist
+                        ========================================= -->
+
+                        <div
+                            id="playlistContainer"
+                            class="playlist-summary hidden"
+                        >
+
+                            <div
+                                class="playlist-summary-info"
+                            >
+
+                                <h3>
+                                    Playlist
+                                </h3>
+
+                                <span id="playlistCount">
+                                    0 videos
+                                </span>
+
+                            </div>
+
+
+                            <div
+                                class="playlist-selection-bar hidden"
+                                id="playlistSelectionBar"
+                            >
+
+                                <label
+                                    class="playlist-select-all"
+                                >
+
+                                    <input
+                                        id="playlistSelectAll"
+                                        type="checkbox"
+                                        checked
+                                    >
+
+                                    <span>
+                                        Select All
+                                    </span>
+
+                                </label>
+
+
+                                <span
+                                    id="playlistSelectedCount"
+                                    class="playlist-selected-count"
+                                >
+                                    0 videos selected
+                                </span>
+
+                            </div>
+
+
+                            <div
+                                id="playlistList"
+                                class="playlist-list hidden"
+                            ></div>
+
+
+                            <button
+                                id="playlistToggleButton"
+                                type="button"
+                                class="playlist-toggle-button"
+                            >
+                                View Videos
+                            </button>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ========================================
+                         Quality / Audio Selection
+                    ========================================= -->
+
+                    <div class="quality-section">
+
+
+                        <h3 id="qualityHeading">
+
+                            Quality
+
+                        </h3>
+
+
+                        <select id="qualitySelect">
+
+                            <option value="">
+
+                                Select quality
+
+                            </option>
+
+                        </select>
+
+
+                    </div>
+
+
+                    <!-- ========================================
+                         Download Location
+                    ========================================= -->
+
+                    <div class="location-section">
+
+                        <h3>
+
+                            Download Location
+
+                        </h3>
+
+
+                        <div class="location-container">
+
+
+                            <input
+                                id="locationInput"
+                                type="text"
+                                placeholder="Choose download folder..."
+                                readonly
+                            >
+
+
+                            <button id="browseButton">
+
+                                Browse
+
+                            </button>
+
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ========================================
+                         Download
+                    ========================================= -->
+
+                    <button
+                        id="downloadButton"
+                        class="download-button"
+                    >
+
+                        Download
+
+                    </button>
+
+
+                </div>
+
+
+            </section>
+
+        </main>
+
+
+        <!-- ========================================
+             Footer
+        ========================================= -->
+
+        <footer class="footer">
+
+
+            <span>
+
+                YouTube Downloader
+
+            </span>
+
+
+            <span>
+
+                Powered by yt-dlp & ffmpeg
+
+            </span>
+
+
+        </footer>
+
+
+    </div>
+
+
+    <!-- ========================================
+         JavaScript
+    ========================================= -->
+
+    <script>
+
+
+        // ========================================
+        // Elements
+        // ========================================
+
+        const typeCards =
+            document.querySelectorAll(
+                ".type-card"
+            );
+
+
+        const status =
+            document.getElementById(
+                "status"
+            );
+
+
+        const statusText =
+            document.getElementById(
+                "statusText"
+            );
+
+        // ========================================
+// Download Progress
+// ========================================
+
+const downloadProgress =
+    document.getElementById(
+        "downloadProgress"
+    );
+
+const progressPercent =
+    document.getElementById(
+        "progressPercent"
+    );
+
+const progressSpeed =
+    document.getElementById(
+        "progressSpeed"
+    );
+
+const progressEta =
+    document.getElementById(
+        "progressEta"
+    );
+
+const progressBarFill =
+    document.getElementById(
+        "progressBarFill"
+    );
+
+const progressDownloaded =
+    document.getElementById(
+        "progressDownloaded"
+    );
+
+const progressTotal =
+    document.getElementById(
+        "progressTotal"
+    );
+
+// ========================================
+// Reset Download Progress
+// ========================================
+
+function resetDownloadProgress() {
+
+    downloadProgress.classList.add("hidden");
+
+    progressPercent.textContent = "0%";
+    progressSpeed.textContent = "--";
+    progressEta.textContent = "--";
+    progressDownloaded.textContent = "--";
+    progressTotal.textContent = "--";
+
+    progressBarFill.style.width = "0%";
+}
+
+
+
+// ========================================
+// Receive yt-dlp progress
+// ========================================
+
+window.electronAPI.onDownloadProgress(
+    (text) => {
+
+        if (!text) {
+            return;
+        }
+
+
+        const percentMatch =
+            text.match(
+                /(\d+(?:\.\d+)?)%/
+            );
+
+
+        const speedMatch =
+            text.match(
+                /at\s+([^\s]+\/s)/i
+            );
+
+
+        const etaMatch =
+            text.match(
+                /ETA\s+([0-9:]+)/i
+            );
+
+
+        const sizeMatch =
+            text.match(
+                /of\s+([0-9.]+\s*(?:KiB|MiB|GiB|KB|MB|GB))/i
+            );
+
+
+        const percent =
+            percentMatch
+                ? parseFloat(
+                    percentMatch[1]
+                )
+                : null;
+
+
+        const speed =
+            speedMatch
+                ? speedMatch[1]
+                : null;
+
+
+        const eta =
+            etaMatch
+                ? etaMatch[1]
+                : null;
+
+
+        const totalSize =
+            sizeMatch
+                ? sizeMatch[1]
+                : null;
+
+
+        if (
+            percent === null &&
+            !speed &&
+            !eta &&
+            !totalSize
+        ) {
+            return;
+        }
+
+
+        downloadProgress.classList.remove(
+            "hidden"
+        );
+
+
+        if (
+            percent !== null
+        ) {
+
+            progressPercent.textContent =
+                `${percent.toFixed(1)}%`;
+
+            progressBarFill.style.width =
+                `${Math.min(
+                    percent,
+                    100
+                )}%`;
+
+        }
+
+
+        if (speed) {
+
+            progressSpeed.textContent =
+                speed;
+
+        }
+
+
+        if (eta) {
+
+            progressEta.textContent =
+                `ETA ${eta}`;
+
+        }
+
+
+        if (totalSize) {
+
+            progressTotal.textContent =
+                totalSize;
+
+        }
+
+
+        const downloadedMatch =
+            text.match(
+                /(\d+(?:\.\d+)?\s*(?:KiB|MiB|GiB|KB|MB|GB))\s+of/i
+            );
+
+
+        if (downloadedMatch) {
+
+            progressDownloaded.textContent =
+                downloadedMatch[1];
+
+        }
+
+    }
+);
+
+
+        const result =
+            document.getElementById(
+                "result"
+            );
+
+
+        const qualitySelect =
+            document.getElementById(
+                "qualitySelect"
+            );
+
+
+        const videoSize =
+            document.getElementById(
+                "videoSize"
+            );
+
+
+        const qualityHeading =
+            document.getElementById(
+                "qualityHeading"
+            );
+
+
+        // ========================================
+        // Current analyzed data
+        // ========================================
+
+        let currentData = null;
+
+
+        // ========================================
+        // Current download type
+        // ========================================
+
+        let currentType =
+            "video";
+
+
+        // ========================================
+        // Download type selection
+        // ========================================
+
+        typeCards.forEach(
+            (card) => {
+
+                card.addEventListener(
+                    "click",
+                    () => {
+
+
+                        typeCards.forEach(
+                            (item) => {
+
+                                item.classList.remove(
+                                    "active"
+                                );
+
+                            }
+                        );
+
+
+                        card.classList.add(
+                            "active"
+                        );
+
+
+                        currentType =
+                            card.dataset.type;
+
+
+                        console.log(
+                            "Selected type:",
+                            currentType
+                        );
+
+
+                        // --------------------------------
+                        // If data already exists,
+                        // rebuild the correct list
+                        // --------------------------------
+
+                        if (currentType === "audio") {
+
+    buildAudioList(
+        currentData
+    );
+
+} else if (currentType === "subtitle") {
+
+    buildSubtitleList(
+        currentData
+    );
+
+} else {
+
+    buildQualityList(
+        currentData
+    );
+
+}
+
+                    }
+                );
+
+            }
+        );
+
+
+        // ========================================
+// Build Playlist List
+// ========================================
+
+function buildPlaylistList(
+    data
+) {
+
+    const playlistContainer =
+        document.getElementById(
+            "playlistContainer"
+        );
+
+    const playlistList =
+        document.getElementById(
+            "playlistList"
+        );
+
+    const playlistCount =
+        document.getElementById(
+            "playlistCount"
+        );
+
+    const playlistToggleButton =
+        document.getElementById(
+            "playlistToggleButton"
+        );
+
+
+    if (
+        !playlistContainer ||
+        !playlistList ||
+        !playlistCount ||
+        !playlistToggleButton
+    ) {
+
+        return;
+
+    }
+
+
+    const entries =
+        data &&
+        Array.isArray(
+            data.playlistEntries
+        )
+            ? data.playlistEntries
+            : [];
+
+
+    if (
+        entries.length === 0
+    ) {
+
+        playlistContainer.classList.add(
+            "hidden"
+        );
+
+
+        const selectionBar =
+            document.getElementById(
+                "playlistSelectionBar"
+            );
+
+
+        if (
+            selectionBar
+        ) {
+
+            selectionBar.classList.add(
+                "hidden"
+            );
+
+        }
+
+
+        playlistList.classList.add(
+            "hidden"
+        );
+
+        playlistToggleButton.textContent =
+            "View Videos";
+
+        const videoInfo =
+            playlistContainer.closest(
+                ".video-info"
+            );
+
+        if (
+            videoInfo
+        ) {
+
+            videoInfo.classList.remove(
+                "playlist-expanded"
+            );
+
+        }
+
+        return;
+
+    }
+
+
+    playlistCount.textContent =
+        `${entries.length} videos`;
+
+
+    const selectAll =
+        document.getElementById(
+            "playlistSelectAll"
+        );
+
+    const selectedCount =
+        document.getElementById(
+            "playlistSelectedCount"
+        );
+
+
+    if (selectAll) {
+
+        selectAll.checked =
+            true;
+
+        selectAll.indeterminate =
+            false;
+
+    }
+
+
+    if (selectedCount) {
+
+        selectedCount.textContent =
+            `${entries.length} videos selected`;
+
+    }
+
+
+    playlistList.innerHTML =
+        "";
+
+
+    entries.forEach(
+        (
+            entry,
+            index
+        ) => {
+
+            const item =
+                document.createElement(
+                    "div"
+                );
+
+
+            item.className =
+                "playlist-item";
+
+
+            const checkbox =
+                document.createElement(
+                    "input"
+                );
+
+
+            checkbox.type =
+                "checkbox";
+
+
+            checkbox.className =
+                "playlist-checkbox";
+
+
+            checkbox.checked =
+                true;
+
+
+            checkbox.dataset.index =
+                index;
+
+
+            const number =
+                document.createElement(
+                    "span"
+                );
+
+
+            number.className =
+                "playlist-number";
+
+
+            number.textContent =
+                `${index + 1}.`;
+
+
+            const title =
+                document.createElement(
+                    "span"
+                );
+
+
+            title.className =
+                "playlist-title";
+
+
+            title.textContent =
+                entry.title ||
+                "Unknown title";
+
+
+            const duration =
+                document.createElement(
+                    "span"
+                );
+
+
+            duration.className =
+                "playlist-duration";
+
+
+            duration.textContent =
+                entry.durationFormatted ||
+                "--";
+
+
+            item.appendChild(
+                checkbox
+            );
+
+
+            item.appendChild(
+                number
+            );
+
+
+            item.appendChild(
+                title
+            );
+
+
+            item.appendChild(
+                duration
+            );
+
+
+            playlistList.appendChild(
+                item
+            );
+
+        }
+    );
+
+
+    playlistContainer.classList.remove(
+        "hidden"
+    );
+
+
+    const selectionBar =
+        document.getElementById(
+            "playlistSelectionBar"
+        );
+
+
+    if (
+        selectionBar
+    ) {
+
+        selectionBar.classList.remove(
+            "hidden"
+        );
+
+    }
+
+
+    playlistList.classList.add(
+        "hidden"
+    );
+
+
+    playlistToggleButton.textContent =
+        "View Videos";
+
+
+    const videoInfo =
+        playlistContainer.closest(
+            ".video-info"
+        );
+
+    if (
+        videoInfo
+    ) {
+
+        videoInfo.classList.remove(
+            "playlist-expanded"
+        );
+
+    }
+
+}
+// ========================================
+// Build Video Quality List
+// ========================================
+
+function buildQualityList(
+    data
+) {
+
+    currentData =
+        data;
+
+    currentType =
+        "video";
+
+
+    qualityHeading.textContent =
+        "Quality";
+
+
+    qualitySelect.innerHTML = `
+        <option value="">
+            Select quality
+        </option>
+    `;
+
+
+    videoSize.textContent =
+        "--";
+
+
+    if (
+        !data ||
+        !Array.isArray(
+            data.formats
+        ) ||
+        data.formats.length === 0
+    ) {
+
+        return;
+
+    }
+
+
+    // ========================================
+    // Group formats by quality
+    // ========================================
+
+    const qualityMap =
+        new Map();
+
+
+    data.formats.forEach(
+        (
+            format
+        ) => {
+
+            const quality =
+                Number(
+                    format.standardQuality
+                ) || 0;
+
+
+            if (
+                quality <= 0
+            ) {
+
+                return;
+
+            }
+
+
+            const existing =
+                qualityMap.get(
+                    quality
+                );
+
+
+            if (
+                !existing
+            ) {
+
+                qualityMap.set(
+                    quality,
+                    format
+                );
+
+                return;
+
+            }
+
+
+            // Prefer MP4
+
+            if (
+                format.ext === "mp4" &&
+                existing.ext !== "mp4"
+            ) {
+
+                qualityMap.set(
+                    quality,
+                    format
+                );
+
+                return;
+
+            }
+
+
+            // Prefer format with audio
+
+            if (
+                format.hasAudio &&
+                !existing.hasAudio
+            ) {
+
+                qualityMap.set(
+                    quality,
+                    format
+                );
+
+            }
+
+        }
+    );
+
+
+    // ========================================
+    // Sort highest quality first
+    // ========================================
+
+    const formats =
+        Array.from(
+            qualityMap.values()
+        ).sort(
+            (
+                a,
+                b
+            ) => {
+
+                return (
+                    Number(
+                        b.standardQuality
+                    ) -
+                    Number(
+                        a.standardQuality
+                    )
+                );
+
+            }
+        );
+
+
+    // ========================================
+    // Add video qualities
+    // ========================================
+
+    formats.forEach(
+        (
+            format
+        ) => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            const quality =
+                Number(
+                    format.standardQuality
+                ) || 0;
+
+
+            option.value =
+                quality;
+
+
+            option.textContent =
+                `${quality}p`;
+
+
+            qualitySelect.appendChild(
+                option
+            );
+
+        }
+    );
+
+
+    // ========================================
+    // Best available
+    // ========================================
+
+    const bestOption =
+        document.createElement(
+            "option"
+        );
+
+
+    bestOption.value =
+        "best";
+
+
+    bestOption.textContent =
+        "Best available";
+
+
+    qualitySelect.appendChild(
+        bestOption
+    );
+
+
+    if (qualitySelect.options.length > 1) {
+
+        qualitySelect.selectedIndex = 1;
+
+        qualitySelect.dispatchEvent(new Event("change"));
+
+    } else {
+
+        qualitySelect.value = "";
+
+        videoSize.textContent = "--";
+
+    }
+
+}
+
+
+// ========================================
+// Build Audio Quality List
+// ========================================
+
+function buildAudioList(data) {
+
+    currentData =
+        data;
+
+    currentType =
+        "audio";
+
+
+    qualityHeading.textContent =
+        "Audio Quality";
+
+
+    qualitySelect.innerHTML = `
+        <option value="">
+            Select audio quality
+        </option>
+    `;
+
+
+    videoSize.textContent =
+        "--";
+
+
+    if (
+        !data ||
+        !Array.isArray(
+            data.audioFormats
+        ) ||
+        data.audioFormats.length === 0
+    ) {
+
+        const option =
+            document.createElement(
+                "option"
+            );
+
+
+        option.value =
+            "";
+
+
+        option.textContent =
+            "No audio formats found";
+
+
+        qualitySelect.appendChild(
+            option
+        );
+
+
+        return;
+
+    }
+
+
+    data.audioFormats.forEach(
+        (format) => {
+
+            const option =
+                document.createElement(
+                    "option"
+                );
+
+
+            option.value =
+                format.formatId;
+
+
+            const abr =
+                Number(
+                    format.abr
+                ) || 0;
+
+
+            let text =
+                format.ext
+                    ? format.ext.toUpperCase()
+                    : "Audio";
+
+
+            if (abr > 0) {
+
+                text +=
+                    ` ${Math.round(abr)} kbps`;
+
+            }
+
+
+            option.textContent =
+                text;
+
+
+            qualitySelect.appendChild(
+                option
+            );
+
+        }
+    );
+
+
+    const bestOption =
+        document.createElement(
+            "option"
+        );
+
+
+    bestOption.value =
+        "best";
+
+
+    bestOption.textContent =
+        "Best available";
+
+
+    qualitySelect.appendChild(
+        bestOption
+    );
+
+
+    if (qualitySelect.options.length > 1) {
+
+        qualitySelect.selectedIndex = 1;
+
+        qualitySelect.dispatchEvent(new Event("change"));
+
+    } else {
+
+        qualitySelect.value = "";
+
+        videoSize.textContent = "--";
+
+    }
+
+}
+
+
+// ========================================
+// Build Subtitle List
+// ========================================
+
+function buildSubtitleList(
+    data
+) {
+
+    currentData =
+        data;
+
+    currentType =
+        "subtitle";
+
+
+    qualityHeading.textContent =
+        "Subtitle Language";
+
+
+    qualitySelect.innerHTML = `
+        <option value="">
+            Select subtitle language
+        </option>
+    `;
+
+
+    videoSize.textContent =
+        "--";
+
+
+    const languages =
+        new Set();
+
+
+    if (
+        data &&
+        Array.isArray(
+            data.subtitles
+        )
+    ) {
+
+        for (
+            const subtitle
+            of data.subtitles
+        ) {
+
+            const language =
+                String(
+                    subtitle.language ||
+                    ""
+                )
+                    .toLowerCase()
+                    .trim();
+
+
+            if (
+                language === "ar" ||
+                language.startsWith("ar-")
+            ) {
+
+                languages.add(
+                    "ar"
+                );
+
+            }
+
+
+            if (
+                language === "en" ||
+                language.startsWith("en-")
+            ) {
+
+                languages.add(
+                    "en"
+                );
+
+            }
+
+        }
+
+    }
+
+
+    if (
+        data &&
+        Array.isArray(
+            data.playlistSubtitleLanguages
+        )
+    ) {
+
+        for (
+            const language
+            of data.playlistSubtitleLanguages
+        ) {
+
+            const normalized =
+                String(
+                    language ||
+                    ""
+                )
+                    .toLowerCase()
+                    .trim();
+
+
+            if (
+                normalized === "ar" ||
+                normalized.startsWith("ar-")
+            ) {
+
+                languages.add(
+                    "ar"
+                );
+
+            }
+
+
+            if (
+                normalized === "en" ||
+                normalized.startsWith("en-")
+            ) {
+
+                languages.add(
+                    "en"
+                );
+
+            }
+
+        }
+
+    }
+
+
+    if (
+        languages.size === 0
+    ) {
+
+        const option =
+            document.createElement(
+                "option"
+            );
+
+
+        option.value =
+            "";
+
+
+        option.textContent =
+            "No subtitles available";
+
+
+        qualitySelect.appendChild(
+            option
+        );
+
+
+        return;
+
+    }
+
+
+    if (
+        languages.has(
+            "ar"
+        )
+    ) {
+
+        const option =
+            document.createElement(
+                "option"
+            );
+
+
+        option.value =
+            "ar";
+
+
+        option.textContent =
+            "Arabic";
+
+
+        qualitySelect.appendChild(
+            option
+        );
+
+    }
+
+
+    if (
+        languages.has(
+            "en"
+        )
+    ) {
+
+        const option =
+            document.createElement(
+                "option"
+            );
+
+
+        option.value =
+            "en";
+
+
+        option.textContent =
+            "English";
+
+
+        qualitySelect.appendChild(
+            option
+        );
+
+    }
+
+
+    qualitySelect.value =
+        "";
+
+}
+
+
+// ========================================
+// Quality Select Listener
+// ========================================
+
+qualitySelect.addEventListener(
+    "change",
+    () => {
+
+
+        const selectedId =
+            qualitySelect.value;
+
+
+        if (
+            !selectedId
+        ) {
+
+            videoSize.textContent =
+                "--";
+
+            return;
+
+        }
+
+
+        if (
+            currentType ===
+            "audio"
+        ) {
+
+
+            if (
+                !currentData ||
+                !Array.isArray(
+                    currentData.audioFormats
+                )
+            ) {
+
+                videoSize.textContent =
+                    "--";
+
+                return;
+
+            }
+
+
+            let selectedAudio =
+                null;
+
+
+            if (
+                selectedId ===
+                "best"
+            ) {
+
+                selectedAudio =
+                    currentData
+                        .audioFormats
+                        .slice()
+                        .sort(
+                            (a, b) => {
+
+                                return (
+                                    Number(
+                                        b.abr
+                                    ) -
+                                    Number(
+                                        a.abr
+                                    )
+                                );
+
+                            }
+                        )[0];
+
+            }
+
+            else {
+
+                selectedAudio =
+                    currentData
+                        .audioFormats
+                        .find(
+                            (format) => {
+
+                                return (
+                                    String(
+                                        format.formatId
+                                    ) ===
+                                    String(
+                                        selectedId
+                                    )
+                                );
+
+                            }
+                        );
+
+            }
+
+            let audioSizeInMB =
+                selectedAudio
+                    ? (Number(selectedAudio.filesizeMB) || (Number(selectedAudio.filesize) / (1024 * 1024)) || 0)
+                    : 0;
+
+            // Calculate for Playlist
+            if (
+                audioSizeInMB > 0 &&
+                currentData &&
+                Array.isArray(currentData.playlistEntries) &&
+                currentData.playlistEntries.length > 0
+            ) {
+
+                const firstVideoDuration = Number(currentData.duration) || 0;
+
+                const checkedBoxes = document.querySelectorAll(".playlist-checkbox:checked");
+
+                let totalDuration = 0;
+
+
+                if (checkedBoxes.length > 0) {
+
+                    checkedBoxes.forEach((cb) => {
+
+                        const entry = currentData.playlistEntries[Number(cb.dataset.index)];
+
+                        if (entry) totalDuration += Number(entry.duration) || 0;
+
+                    });
+
+                } else {
+
+                    totalDuration = currentData.playlistEntries.reduce((sum, e) => sum + (Number(e.duration) || 0), 0);
+
+                }
+
+
+                if (firstVideoDuration > 0 && totalDuration > 0) {
+
+                    audioSizeInMB *= (totalDuration / firstVideoDuration);
+
+                }
+
+            }
+
+
+            if (
+                audioSizeInMB > 0
+            ) {
+
+                videoSize.textContent =
+                    audioSizeInMB >= 1024
+                        ? `~${(audioSizeInMB / 1024).toFixed(2)} GB`
+                        : `~${audioSizeInMB.toFixed(2)} MB`;
+
+            }
+            else {
+
+                videoSize.textContent =
+                    "--";
+
+            }
+
+
+            return;
+
+        }
+
+
+        if (
+            currentType ===
+            "subtitle"
+        ) {
+
+            videoSize.textContent =
+                "--";
+
+            return;
+
+        }
+
+
+        if (
+            !currentData ||
+            !Array.isArray(
+                currentData.formats
+            )
+        ) {
+
+            videoSize.textContent =
+                "--";
+
+            return;
+
+        }
+
+
+        let selected =
+            null;
+
+
+        if (
+            selectedId ===
+            "best"
+        ) {
+
+            selected =
+                currentData
+                    .formats
+                    .slice()
+                    .sort(
+                        (a, b) => {
+
+                            return (
+                                Number(
+                                    b.standardQuality
+                                ) -
+                                Number(
+                                    a.standardQuality
+                                )
+                            );
+
+                        }
+                    )[0];
+
+        }
+
+        else {
+
+            selected =
+                currentData
+                    .formats
+                    .find(
+                        (format) => {
+
+                            return (
+                                Number(
+                                    format.standardQuality
+                                ) ===
+                                Number(
+                                    selectedId
+                                )
+                            );
+
+                        }
+                    );
+
+        }
+
+
+        let videoSizeInMB =
+            selected
+                ? (Number(selected.estimatedSize) || Number(selected.filesizeMB) || (Number(selected.filesize) / (1024 * 1024)) || 0)
+                : 0;
+
+        // Calculate for Playlist
+        if (
+            videoSizeInMB > 0 &&
+            currentData &&
+            Array.isArray(currentData.playlistEntries) &&
+            currentData.playlistEntries.length > 0
+        ) {
+
+            const firstVideoDuration = Number(currentData.duration) || 0;
+
+            const checkedBoxes = document.querySelectorAll(".playlist-checkbox:checked");
+
+            let totalDuration = 0;
+
+
+            if (checkedBoxes.length > 0) {
+
+                checkedBoxes.forEach((cb) => {
+
+                    const entry = currentData.playlistEntries[Number(cb.dataset.index)];
+
+                    if (entry) totalDuration += Number(entry.duration) || 0;
+
+                });
+
+            } else {
+
+                totalDuration = currentData.playlistEntries.reduce((sum, e) => sum + (Number(e.duration) || 0), 0);
+
+            }
+
+
+            if (firstVideoDuration > 0 && totalDuration > 0) {
+
+                videoSizeInMB *= (totalDuration / firstVideoDuration);
+
+            }
+
+        }
+
+
+        if (
+            videoSizeInMB > 0
+        ) {
+
+            videoSize.textContent =
+                videoSizeInMB >= 1024
+                    ? `~${(videoSizeInMB / 1024).toFixed(2)} GB`
+                    : `~${videoSizeInMB.toFixed(2)} MB`;
+
+        }
+        else {
+
+            videoSize.textContent =
+                "--";
+
+        }
+
+    }
+);
+
+
+// ========================================
+// Analyze button
+// ========================================
+
+document
+    .getElementById(
+        "analyzeButton"
+    )
+    .addEventListener(
+        "click",
+        async () => {
+
+
+            const url =
+                document
+                    .getElementById(
+                        "urlInput"
+                    )
+                    .value
+                    .trim();
+
+
+            if (
+                !url
+            ) {
+
+                alert(
+                    "Please enter a YouTube URL."
+                );
+
+                return;
+
+            }
+
+
+            status.classList.remove(
+                "hidden"
+            );
+
+
+            statusText.textContent =
+                "Analyzing URL...";
+
+
+            try {
+
+
+                const response =
+                    await window
+                        .electronAPI
+                        .analyzeURL(
+                            url
+                        );
+
+
+                console.log(
+                    "Response from Electron:",
+                    response
+                );
+
+
+                if (
+                    response.success
+                ) {
+
+
+                    const data =
+                        response.data;
+
+
+                    let selectorData = {
+
+                        ...data,
+
+                        playlistSubtitleLanguages:
+                            Array.isArray(
+                                data.playlistSubtitleLanguages
+                            )
+                                ? data.playlistSubtitleLanguages
+                                : []
+
+                    };
+
+
+                    if (
+                        Array.isArray(
+                            data.playlistEntries
+                        ) &&
+                        data.playlistEntries.length > 0
+                    ) {
+
+                        const firstEntry =
+                            data.playlistEntries[0];
+
+
+                        if (
+                            firstEntry &&
+                            typeof firstEntry.webpageUrl ===
+                                "string" &&
+                            firstEntry.webpageUrl.trim()
+                        ) {
+
+                            try {
+
+                                const firstVideoResponse =
+                                    await window
+                                        .electronAPI
+                                        .analyzeURL(
+                                            firstEntry.webpageUrl
+                                        );
+
+
+                                if (
+                                    firstVideoResponse &&
+                                    firstVideoResponse.success &&
+                                    firstVideoResponse.data
+                                ) {
+
+                                    selectorData = {
+
+                                        ...firstVideoResponse.data,
+
+                                        playlistEntries:
+                                            data.playlistEntries,
+
+                                        playlistSubtitleLanguages:
+                                            Array.isArray(
+                                                data.playlistSubtitleLanguages
+                                            )
+                                                ? data.playlistSubtitleLanguages
+                                                : []
+
+                                    };
+
+                                }
+
+                            }
+                            catch (
+                                firstVideoError
+                            ) {
+
+                                console.warn(
+                                    "Could not analyze first playlist video for quality selectors:",
+                                    firstVideoError
+                                );
+
+                            }
+
+                        }
+
+                    }
+
+
+                    currentData =
+                        selectorData;
+
+
+                    document
+                        .getElementById(
+                            "videoTitle"
+                        )
+                        .textContent =
+                        data.title ||
+                        "Unknown title";
+
+
+                    document
+                        .getElementById(
+                            "videoType"
+                        )
+                        .textContent =
+                        currentType ===
+                            "audio"
+                            ? "Audio"
+                            : "YouTube";
+
+
+                    document
+                        .getElementById(
+                            "videoDuration"
+                        )
+                        .textContent =
+                        selectorData.durationFormatted ||
+                        data.durationFormatted ||
+                        "--";
+
+
+                    buildPlaylistList(
+                        data
+                    );
+
+                    if (currentType === "audio") {
+
+                        buildAudioList(
+                            selectorData
+                        );
+
+                    } else if (currentType === "subtitle") {
+
+                        buildSubtitleList(
+                            selectorData
+                        );
+
+                    } else {
+
+                        buildQualityList(
+                            selectorData
+                        );
+
+                    }
+
+
+                    status.classList.add(
+                        "hidden"
+                    );
+
+
+                    result.classList.remove(
+                        "hidden"
+                    );
+
+                }
+
+                else {
+
+
+                    status.classList.add(
+                        "hidden"
+                    );
+
+
+                    alert(
+                        "Error: " +
+                        (
+                            response.message ||
+                            "Analysis failed."
+                        )
+                    );
+
+                }
+
+
+            }
+            catch (
+                error
+            ) {
+
+
+                status.classList.add(
+                    "hidden"
+                );
+
+
+                alert(
+                    "Error: " +
+                    error.message
+                );
+
+
+                console.error(
+                    error
+                );
+
+            }
+
+        }
+    );
+        // ========================================
+        // Paste button
+        // ========================================
+
+        document
+            .getElementById(
+                "pasteButton"
+            )
+            .addEventListener(
+                "click",
+                async () => {
+
+                    try {
+
+                        const text =
+                            await navigator
+                                .clipboard
+                                .readText();
+
+
+                        document
+                            .getElementById(
+                                "urlInput"
+                            )
+                            .value =
+                            text;
+
+                    }
+                    catch (
+                        error
+                    ) {
+
+                        alert(
+                            "Unable to access clipboard."
+                        );
+
+                    }
+
+                }
+            );
+
+
+        // ========================================
+// Browse button
+// ========================================
+
+document
+    .getElementById(
+        "browseButton"
+    )
+    .addEventListener(
+        "click",
+        async () => {
+
+            const selectedFolder =
+                await electronAPI.chooseDownloadFolder();
+
+            if (!selectedFolder) {
+                return;
+            }
+
+            document
+                .getElementById(
+                    "locationInput"
+                )
+                .value =
+                    selectedFolder;
+
+        }
+    );
+        // ========================================
+        // Download button
+        // ========================================
+
+        document
+    .getElementById(
+        "downloadButton"
+    )
+    .addEventListener(
+        "click",
+        async () => {
+
+            // ========================================
+            // Subtitle download
+            // ========================================
+
+            if (currentType === "subtitle") {
+
+                const language =
+                    qualitySelect.value;
+
+                // No subtitle language selected
+                if (!language) {
+
+                    alert(
+                        "Please select a subtitle language."
+                    );
+
+                    return;
+
+                }
+
+                if (!currentData) {
+
+                    alert(
+                        "Please analyze a YouTube URL first."
+                    );
+
+                    return;
+
+                }
+
+                try {
+
+                    status.classList.remove(
+                        "hidden"
+                    );
+
+                    statusText.textContent =
+                        "Downloading subtitles...";
+
+
+                    const outputDir =
+                        document
+                            .getElementById(
+                                "locationInput"
+                            )
+                            .value
+                            .trim();
+
+
+                    let playlistEntries =
+                        Array.isArray(
+                            currentData.playlistEntries
+                        )
+                            ? currentData.playlistEntries
+                            : [];
+
+                    let selectedEntries = [];
+
+                    if (
+                        playlistEntries.length > 0
+                    ) {
+
+                        const selectedCheckboxes =
+                            Array.from(
+                                document.querySelectorAll(
+                                    ".playlist-checkbox:checked"
+                                )
+                            );
+
+                        selectedEntries =
+                            selectedCheckboxes
+                                .map(
+                                    (checkbox) => {
+
+                                        const index =
+                                            Number(
+                                                checkbox.dataset.index
+                                            );
+
+                                        return (
+                                            playlistEntries[index] ||
+                                            null
+                                        );
+
+                                    }
+                                )
+                                .filter(
+                                    (entry) => {
+
+                                        return (
+                                            entry &&
+                                            typeof entry.webpageUrl ===
+                                                "string" &&
+                                            entry.webpageUrl.trim()
+                                        );
+
+                                    }
+                                );
+
+                        if (
+                            selectedEntries.length === 0
+                        ) {
+
+                            status.classList.add(
+                                "hidden"
+                            );
+
+                            alert(
+                                "Please select at least one video from the playlist."
+                            );
+
+                            return;
+
+                        }
+
+                    }
+
+
+                    const response =
+    await window
+        .electronAPI
+        .downloadSubtitles({
+
+            url:
+                currentData.webpageUrl,
+
+            language,
+
+            outputDir,
+
+            playlistEntries:
+                selectedEntries,
+
+            playlistTitle:
+                currentData.title ||
+                "Playlist"
+
+        });
+
+
+                    status.classList.add(
+                        "hidden"
+                    );
+
+
+                    if (response.success) {
+
+                        alert(
+                            "Subtitle downloaded successfully."
+                        );
+
+                    } else {
+
+                        alert(
+                            "Error: " +
+                            (
+                                response.message ||
+                                "Subtitle download failed."
+                            )
+                        );
+
+                    }
+
+                }
+                catch (error) {
+
+                    status.classList.add(
+                        "hidden"
+                    );
+
+                    console.error(
+                        "Subtitle download error:",
+                        error
+                    );
+
+                    alert(
+                        "Error: " +
+                        error.message
+                    );
+
+                }
+
+                return;
+            }
+
+
+            // ========================================
+            // Video / Audio
+            // ========================================
+        if (!currentData) {
+
+            alert(
+                "Please analyze a YouTube URL first."
+            );
+
+            return;
+
+        }
+
+
+        const selectedQuality =
+            qualitySelect.value;
+
+
+        if (!selectedQuality) {
+
+            alert(
+                currentType === "audio"
+                    ? "Please select an audio quality."
+                    : "Please select a video quality."
+            );
+
+            return;
+
+        }
+
+
+        try {
+
+            status.classList.remove(
+                "hidden"
+            );
+
+
+            resetDownloadProgress();
+
+            downloadProgress.classList.remove(
+                "hidden"
+            );
+
+
+            const outputDir =
+                document
+                    .getElementById(
+                        "locationInput"
+                    )
+                    .value
+                    .trim();
+
+
+            // ========================================
+            // Get selected Playlist entries
+            // ========================================
+
+            const playlistEntries =
+                Array.isArray(
+                    currentData.playlistEntries
+                )
+                    ? currentData.playlistEntries
+                    : [];
+
+
+            let downloadEntries =
+                [];
+
+
+            if (
+                playlistEntries.length > 0
+            ) {
+
+                const selectedCheckboxes =
+                    Array.from(
+                        document.querySelectorAll(
+                            ".playlist-checkbox:checked"
+                        )
+                    );
+
+
+                downloadEntries =
+                    selectedCheckboxes
+                        .map(
+                            (checkbox) => {
+
+                                const index =
+                                    Number(
+                                        checkbox.dataset.index
+                                    );
+
+
+                                return (
+                                    playlistEntries[index] ||
+                                    null
+                                );
+
+                            }
+                        )
+                        .filter(
+                            (entry) => {
+
+                                return (
+                                    entry &&
+                                    typeof entry.webpageUrl ===
+                                        "string" &&
+                                    entry.webpageUrl.trim()
+                                );
+
+                            }
+                        );
+
+            }
+
+
+            // ========================================
+            // Single video / audio
+            // ========================================
+
+            if (
+                playlistEntries.length === 0
+            ) {
+
+                downloadEntries = [
+
+                    {
+
+                        title:
+                            currentData.title ||
+                            "Video",
+
+                        webpageUrl:
+                            currentData.webpageUrl
+
+                    }
+
+                ];
+
+            }
+
+
+            if (
+                downloadEntries.length === 0
+            ) {
+
+                throw new Error(
+                    "Please select at least one video from the playlist."
+                );
+
+            }
+
+
+            const totalDownloads =
+                downloadEntries.length;
+
+
+            const failedDownloads =
+                [];
+
+
+            // ========================================
+            // Download selected entries one by one
+            // ========================================
+
+            for (
+                let i = 0;
+                i < totalDownloads;
+                i++
+            ) {
+
+                const entry =
+                    downloadEntries[i];
+
+
+                const title =
+                    entry.title ||
+                    `Video ${i + 1}`;
+
+
+                statusText.textContent =
+                    totalDownloads > 1
+                        ? `Downloading ${i + 1} of ${totalDownloads}...`
+                        : (
+                            currentType === "audio"
+                                ? "Downloading audio..."
+                                : "Downloading video..."
+                        );
+
+
+                resetDownloadProgress();
+
+
+                try {
+
+                    const response =
+                        await window
+                            .electronAPI
+                            .downloadMedia({
+
+                                url:
+                                    entry.webpageUrl,
+
+                                type:
+                                    currentType,
+
+                                quality:
+                                    selectedQuality,
+
+                                outputDir
+
+                            });
+
+
+                    if (
+                        !response ||
+                        !response.success
+                    ) {
+
+                        failedDownloads.push(
+                            title
+                        );
+
+                    }
+
+                }
+                catch (
+                    error
+                ) {
+
+                    console.error(
+                        `Download failed: ${title}`,
+                        error
+                    );
+
+
+                    failedDownloads.push(
+                        title
+                    );
+
+                }
+
+            }
+
+
+            // ========================================
+            // Download finished
+            // ========================================
+
+            resetDownloadProgress();
+
+
+            status.classList.add(
+                "hidden"
+            );
+
+
+            if (
+                failedDownloads.length === 0
+            ) {
+
+                alert(
+                    totalDownloads > 1
+                        ? `All ${totalDownloads} selected videos downloaded successfully.`
+                        : (
+                            currentType === "audio"
+                                ? "Audio downloaded successfully."
+                                : "Video downloaded successfully."
+                        )
+                );
+
+            } else {
+
+                const successCount =
+                    totalDownloads -
+                    failedDownloads.length;
+
+
+                alert(
+                    `${successCount} of ${totalDownloads} downloads completed.\n\n` +
+                    `Failed:\n` +
+                    failedDownloads.join(
+                        "\n"
+                    )
+                );
+
+            }
+
+        }
+        catch (
+            error
+        ) {
+
+            status.classList.add(
+                "hidden"
+            );
+
+
+            resetDownloadProgress();
+
+
+            console.error(
+                "Download error:",
+                error
+            );
+
+
+            alert(
+                "Error: " +
+                error.message
+            );
+
+        }
+
+        }
+
+    );
+
+
+        // ========================================
+        // Playlist View Toggle
+        // ========================================
+
+        const playlistToggleButton =
+            document.getElementById(
+                "playlistToggleButton"
+            );
+
+        const playlistContainer =
+            document.getElementById(
+                "playlistContainer"
+            );
+
+        const playlistList =
+            document.getElementById(
+                "playlistList"
+            );
+
+        const playlistSummaryInfo =
+            document.querySelector(
+                ".playlist-summary-info"
+            );
+
+        const videoInfo =
+            document.querySelector(
+                ".video-info"
+            );
+
+
+        if (
+            playlistToggleButton &&
+            playlistContainer &&
+            playlistList &&
+            playlistSummaryInfo &&
+            videoInfo
+        ) {
+
+            playlistToggleButton.addEventListener(
+                "click",
+                () => {
+
+                    const expanded =
+                        videoInfo.classList.toggle(
+                            "playlist-expanded"
+                        );
+
+
+                    if (
+                        expanded
+                    ) {
+
+                        playlistList.classList.remove(
+                            "hidden"
+                        );
+
+
+                        const selectionBar =
+                            document.getElementById(
+                                "playlistSelectionBar"
+                            );
+
+
+                        if (
+                            selectionBar
+                        ) {
+
+                            selectionBar.classList.remove(
+                                "hidden"
+                            );
+
+                        }
+
+
+                        playlistSummaryInfo.classList.add(
+                            "hidden"
+                        );
+
+                        playlistToggleButton.textContent =
+                            "Hide Videos";
+
+                    } else {
+
+                        playlistList.classList.add(
+                            "hidden"
+                        );
+
+
+                        const selectionBar =
+                            document.getElementById(
+                                "playlistSelectionBar"
+                            );
+
+
+                        if (
+                            selectionBar
+                        ) {
+
+                            selectionBar.classList.add(
+                                "hidden"
+                            );
+
+                        }
+
+
+                        playlistSummaryInfo.classList.remove(
+                            "hidden"
+                        );
+
+                        playlistToggleButton.textContent =
+                            "View Videos";
+
+                    }
+
+                }
+            );
+
+        }
+
+
+        // ========================================
+        // Playlist Selection
+        // ========================================
+
+        function updatePlaylistSelection() {
+
+            const checkboxes =
+                document.querySelectorAll(
+                    ".playlist-checkbox"
+                );
+
+            const selected =
+                document.querySelectorAll(
+                    ".playlist-checkbox:checked"
+                );
+
+            const total =
+                checkboxes.length;
+
+            const selectedCount =
+                selected.length;
+
+            const selectAll =
+                document.getElementById(
+                    "playlistSelectAll"
+                );
+
+            const count =
+                document.getElementById(
+                    "playlistSelectedCount"
+                );
+
+            if (count) {
+
+                count.textContent =
+                    `${selectedCount} videos selected`;
+
+            }
+
+            if (selectAll) {
+
+                selectAll.checked =
+                    total > 0 &&
+                    selectedCount === total;
+
+                selectAll.indeterminate =
+                    selectedCount > 0 &&
+                    selectedCount < total;
+
+            }
+
+        }
+
+
+        document.addEventListener(
+            "change",
+            (event) => {
+
+                if (
+                    event.target &&
+                    event.target.id ===
+                    "playlistSelectAll"
+                ) {
+
+                    const checkboxes =
+                        document.querySelectorAll(
+                            ".playlist-checkbox"
+                        );
+
+                    checkboxes.forEach(
+                        (checkbox) => {
+
+                            checkbox.checked =
+                                event.target.checked;
+
+                        }
+                    );
+
+                    updatePlaylistSelection();
+
+                    return;
+
+                }
+
+
+                if (
+                    event.target &&
+                    event.target.classList &&
+                    event.target.classList.contains(
+                        "playlist-checkbox"
+                    )
+                ) {
+
+                    updatePlaylistSelection();
+
+                }
+
+            }
+        );
+
+
+        document.addEventListener(
+            "click",
+            (event) => {
+
+                if (
+                    event.target &&
+                    event.target.id ===
+                    "playlistToggleButton"
+                ) {
+
+                    setTimeout(
+                        updatePlaylistSelection,
+                        0
+                    );
+
+                }
+
+            }
+        );
+
+    </script>
+
+</body>
+
+</html>
