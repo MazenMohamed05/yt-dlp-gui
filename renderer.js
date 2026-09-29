@@ -1,4 +1,61 @@
 // ========================================
+// In-App Modal Dialog (Prevents Windows Focus Freezes)
+// ========================================
+
+function showModalAlert(message) {
+    const modal = document.getElementById("customModal");
+    const modalMsg = document.getElementById("customModalMessage");
+    const modalIcon = document.getElementById("customModalIcon");
+    const modalBtn = document.getElementById("customModalButton");
+
+    if (!modal || !modalMsg || !modalBtn) {
+        console.log("Modal Alert:", message);
+        return;
+    }
+
+    modalMsg.textContent = String(message || "");
+    const lower = String(message || "").toLowerCase();
+
+    if (modalIcon) {
+        if (lower.includes("error") || lower.includes("failed") || lower.includes("fail") || lower.includes("unable")) {
+            modalIcon.textContent = "⚠️";
+        } else if (lower.includes("success") || lower.includes("downloaded") || lower.includes("completed")) {
+            modalIcon.textContent = "✅";
+        } else {
+            modalIcon.textContent = "ℹ️";
+        }
+    }
+
+    modal.classList.remove("hidden");
+    modalBtn.focus();
+
+    const cleanup = () => {
+        modal.classList.add("hidden");
+        modalBtn.removeEventListener("click", onBtnClick);
+        window.removeEventListener("keydown", onKeyDown);
+    };
+
+    const onBtnClick = () => {
+        cleanup();
+    };
+
+    const onKeyDown = (e) => {
+        if (e.key === "Enter" || e.key === "Escape") {
+            e.preventDefault();
+            cleanup();
+        }
+    };
+
+    modalBtn.addEventListener("click", onBtnClick);
+    window.addEventListener("keydown", onKeyDown);
+}
+
+// Seamlessly override native alert() to eliminate Windows Alt+Tab freeze
+window.alert = (msg) => {
+    showModalAlert(msg);
+};
+
+// ========================================
         // Elements
         // ========================================
 

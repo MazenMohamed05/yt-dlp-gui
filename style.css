@@ -1308,3 +1308,95 @@ body {
             }
 
         }
+
+/* =========================
+   CUSTOM IN-APP MODAL
+========================= */
+.custom-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 99999;
+    opacity: 1;
+    transition: opacity 0.15s ease;
+}
+
+.custom-modal-overlay.hidden {
+    display: none !important;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.custom-modal-box {
+    background: #181a20;
+    border: 1px solid #30343d;
+    border-radius: 16px;
+    padding: 28px 32px;
+    max-width: 440px;
+    width: 90%;
+    box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    gap: 16px;
+    animation: modalPop 0.2s ease-out;
+}
+
+@keyframes modalPop {
+    from {
+        transform: scale(0.92);
+        opacity: 0;
+    }
+    to {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+.custom-modal-icon {
+    font-size: 32px;
+    width: 54px;
+    height: 54px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #252830;
+}
+
+.custom-modal-message {
+    color: #f5f5f5;
+    font-size: 15px;
+    line-height: 1.55;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.custom-modal-btn {
+    background: #ff0033;
+    color: #ffffff;
+    border: none;
+    border-radius: 10px;
+    padding: 10px 32px;
+    font-size: 15px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+}
+
+.custom-modal-btn:hover {
+    background: #e6002e;
+    transform: translateY(-1px);
+}
+
+.custom-modal-btn:active {
+    transform: translateY(0);
+}
