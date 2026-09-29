@@ -917,3 +917,394 @@ body {
     text-align: right;
 
 }
+
+/* =========================
+   PLAYLIST APPROVED LAYOUT
+========================= */
+
+/* ========================================
+           Approved Playlist Layout
+        ======================================== */
+
+        .video-info {
+
+            display: grid !important;
+
+            grid-template-columns:
+                280px
+                minmax(0, 1fr)
+                minmax(260px, 360px);
+
+            gap: 26px;
+
+            align-items: center;
+
+        }
+
+
+        .playlist-summary {
+
+            min-width: 0;
+
+            display: grid;
+
+            grid-template-columns:
+                minmax(0, 1fr)
+                auto;
+
+            grid-template-areas:
+                "summary button";
+
+            align-items: center;
+
+            gap: 18px;
+
+            padding: 22px;
+
+            background: #14161c;
+
+            border: 1px solid #30343d;
+
+            border-radius: 16px;
+
+        }
+
+
+        .playlist-summary-info {
+
+            grid-area: summary;
+
+            display: flex;
+
+            flex-direction: column;
+
+            gap: 6px;
+
+        }
+
+
+        .playlist-summary-info h3 {
+
+            margin: 0;
+
+            font-size: 22px;
+
+        }
+
+
+        .playlist-summary-info span {
+
+            color: #9da3b0;
+
+            font-size: 15px;
+
+        }
+
+
+        .playlist-list {
+
+            min-width: 0;
+
+            width: 100%;
+
+            max-height: 300px;
+
+            overflow-y: auto;
+
+            padding: 4px 4px 4px 0;
+
+        }
+
+
+        .playlist-item {
+
+            display: grid;
+
+            grid-template-columns:
+                24px
+                38px
+                minmax(0, 1fr)
+                70px;
+
+            gap: 12px;
+
+            align-items: center;
+
+            padding: 11px 8px;
+
+            border-bottom: 1px solid #292d35;
+
+        }
+
+
+        .playlist-checkbox {
+
+            width: 17px;
+
+            height: 17px;
+
+            margin: 0;
+
+            cursor: pointer;
+
+            accent-color: #ff0033;
+
+        }
+
+
+        .playlist-selection-bar {
+
+            display: flex;
+
+            align-items: center;
+
+            justify-content: space-between;
+
+            gap: 16px;
+
+            padding: 10px 8px 14px;
+
+            margin-bottom: 4px;
+
+            border-bottom: 1px solid #30343d;
+
+        }
+
+
+        .playlist-select-all {
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 9px;
+
+            color: #ffffff;
+
+            font-size: 14px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+        }
+
+
+        .playlist-select-all input {
+
+            width: 17px;
+
+            height: 17px;
+
+            margin: 0;
+
+            cursor: pointer;
+
+            accent-color: #ff0033;
+
+        }
+
+
+        .playlist-selected-count {
+
+            color: #8f96a3;
+
+            font-size: 13px;
+
+        }
+
+
+        .playlist-selection-bar {
+
+            flex-wrap: wrap;
+
+        }
+
+
+        .playlist-number {
+
+            color: #8f96a3;
+
+            font-size: 14px;
+
+        }
+
+
+        .playlist-title {
+
+            min-width: 0;
+
+            color: #ffffff;
+
+            font-size: 14px;
+
+            line-height: 1.45;
+
+            overflow: hidden;
+
+            text-overflow: ellipsis;
+
+            white-space: nowrap;
+
+        }
+
+
+        .playlist-duration {
+
+            color: #8f96a3;
+
+            font-size: 13px;
+
+            text-align: right;
+
+        }
+
+
+        .playlist-toggle-button {
+
+            grid-area: button;
+
+            border: 1px solid #3a3f4a;
+
+            border-radius: 10px;
+
+            padding: 10px 18px;
+
+            background: #252934;
+
+            color: #ffffff;
+
+            font-size: 15px;
+
+            font-weight: 600;
+
+            cursor: pointer;
+
+            white-space: nowrap;
+
+        }
+
+
+        .playlist-toggle-button:hover {
+
+            background: #303541;
+
+            border-color: #ff0033;
+
+        }
+
+
+        /* ========================================
+           Expanded State
+        ======================================== */
+
+        .video-info.playlist-expanded {
+
+            grid-template-columns:
+                280px
+                minmax(0, 1fr);
+
+            grid-template-areas:
+                "thumbnail details"
+                "playlist playlist";
+
+            align-items: start;
+
+        }
+
+
+        .video-info.playlist-expanded
+        .thumbnail {
+
+            grid-area: thumbnail;
+
+        }
+
+
+        .video-info.playlist-expanded
+        .info-details {
+
+            grid-area: details;
+
+        }
+
+
+        .video-info.playlist-expanded
+        .playlist-summary {
+
+            grid-area: playlist;
+
+            display: grid;
+
+            grid-template-columns: 1fr;
+
+            grid-template-areas:
+                "selection"
+                "list"
+                "button";
+
+            gap: 12px;
+
+            padding: 18px 0 0 0;
+
+            background: transparent;
+
+            border: 0;
+
+            border-top: 1px solid #30343d;
+
+            border-radius: 0;
+
+        }
+
+
+        .video-info.playlist-expanded
+        .playlist-selection-bar {
+
+            grid-area: selection;
+
+        }
+
+
+        .video-info.playlist-expanded
+        .playlist-list {
+
+            grid-area: list;
+
+            max-height: 300px;
+
+        }
+
+
+        .video-info.playlist-expanded
+        .playlist-toggle-button {
+
+            grid-area: button;
+
+            justify-self: start;
+
+        }
+
+
+        @media (max-width: 850px) {
+
+            .video-info,
+            .video-info.playlist-expanded {
+
+                grid-template-columns:
+                    1fr;
+
+            }
+
+            .video-info.playlist-expanded
+            .thumbnail,
+            .video-info.playlist-expanded
+            .info-details,
+            .video-info.playlist-expanded
+            .playlist-summary {
+
+                grid-area: auto;
+
+            }
+
+        }
