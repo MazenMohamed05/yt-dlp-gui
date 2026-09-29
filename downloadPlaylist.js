@@ -9,8 +9,13 @@ const readline = require('readline');
 
 let downloadBaseDir = null;
 
-const ytDlpPath = String.raw`C:\yt-dlp\yt-dlp.exe`;
-const ffmpegPath = String.raw`C:\yt-dlp\ffmpeg.exe`;
+const ytDlpPath = fs.existsSync(path.join(__dirname, 'bin', 'yt-dlp.exe'))
+    ? path.join(__dirname, 'bin', 'yt-dlp.exe')
+    : (fs.existsSync(String.raw`C:\yt-dlp\yt-dlp.exe`) ? String.raw`C:\yt-dlp\yt-dlp.exe` : 'yt-dlp');
+
+const ffmpegPath = fs.existsSync(path.join(__dirname, 'bin', 'ffmpeg.exe'))
+    ? path.join(__dirname, 'bin', 'ffmpeg.exe')
+    : (fs.existsSync(String.raw`C:\yt-dlp\ffmpeg.exe`) ? String.raw`C:\yt-dlp\ffmpeg.exe` : 'ffmpeg');
 
 // ==================================================
 // CREATE DIRECTORIES

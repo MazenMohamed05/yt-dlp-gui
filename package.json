@@ -5,10 +5,19 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dist": "node scripts/build-protected.js",
-    "dist:win": "node scripts/build-protected.js",
-    "dist:raw": "electron-builder --win"
+    "dist": "electron-builder --win",
+    "dist:win": "electron-builder --win",
+    "dist:protected": "node scripts/build-protected.js"
   },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/MazenMohamed05/yt-dlp-gui.git"
+  },
+  "bugs": {
+    "url": "https://github.com/MazenMohamed05/yt-dlp-gui/issues"
+  },
+  "homepage": "https://github.com/MazenMohamed05/yt-dlp-gui#readme",
+  "license": "MIT",
   "keywords": [
     "youtube",
     "playlist",
