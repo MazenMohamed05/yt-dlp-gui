@@ -95,7 +95,6 @@ Run the interactive command-line downloader:
 ```bash
 node downloadPlaylist.js
 ```
-*Or double-click `start-downloader.bat` on Windows.*
 
 ---
 
