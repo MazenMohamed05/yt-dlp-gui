@@ -53,35 +53,45 @@ A modern, high-performance desktop application and command-line tool for downloa
 
 ---
 
-## 🚀 Getting Started
+## 📥 Download & Quick Start (For End Users)
 
-### Prerequisites
+If you just want to use the application on Windows, **you do NOT need to install Node.js, Git, or run any commands**:
 
-1. **Node.js** (v18 or higher recommended): [Download from official website](https://nodejs.org/).
-2. **Git**: [Download Git](https://git-scm.com/).
-
-### Installation
-
-1. **Clone the repository:**
-   ```bash
-   git clone https://github.com/<your-username>/youtube_playlist_downloader.git
-   cd youtube_playlist_downloader
-   ```
-
-2. **Install dependencies:**
-   ```bash
-   npm install
-   ```
-
-3. **Set Up Binary Tools (`/bin` folder):**
-   Place the following executable binaries into the `bin/` directory in the project root:
-   - `yt-dlp.exe` — [Download latest release](https://github.com/yt-dlp/yt-dlp/releases/latest)
-   - `ffmpeg.exe` and `ffprobe.exe` — [Download from Gyan.dev](https://www.gyan.dev/ffmpeg/builds/)
-   - `deno.exe` — [Download Deno](https://github.com/denoland/deno/releases/latest)
+1. Go to the **[Latest Releases](https://github.com/MazenMohamed05/yt-dlp-gui/releases/latest)** page.
+2. Download **`YouTube-Playlist-Downloader-v1.0.0-Portable.zip`** (or the Setup installer).
+3. Extract the folder and double-click **`YouTube Playlist Downloader.exe`** to start downloading immediately! *(All binary engines `yt-dlp` and `ffmpeg` are pre-bundled)*.
 
 ---
 
-## 💻 Running the Application
+## 🛠️ Developer Setup (Building from Source)
+
+If you are a developer and want to inspect, modify, or build the project from source:
+
+### Prerequisites
+- [Node.js](https://nodejs.org/) (v18 or higher recommended)
+- [Git](https://git-scm.com/)
+
+### 1. Clone the repository
+```bash
+git clone https://github.com/MazenMohamed05/yt-dlp-gui.git
+cd yt-dlp-gui
+```
+
+### 2. Install dependencies
+```bash
+npm install
+```
+> **Note on download time:** `npm install` downloads Electron's precompiled desktop binaries (~100MB). Depending on your internet speed, this step may take 1–3 minutes to complete.
+
+### 3. Set Up Binary Tools (`/bin` folder)
+If not already present in the workspace, ensure the required binaries are placed inside the `bin/` directory:
+- `yt-dlp.exe` — [Download latest release](https://github.com/yt-dlp/yt-dlp/releases/latest)
+- `ffmpeg.exe` and `ffprobe.exe` — [Download from Gyan.dev](https://www.gyan.dev/ffmpeg/builds/)
+- `deno.exe` — [Download Deno](https://github.com/denoland/deno/releases/latest)
+
+---
+
+## 💻 Running in Development
 
 ### 1. Desktop GUI Version (Recommended)
 Launch the Electron desktop application:
