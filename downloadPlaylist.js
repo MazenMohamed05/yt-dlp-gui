@@ -682,6 +682,25 @@ function findBestAudio(
     formats.sort(
         (a, b) => {
 
+            const aIsOriginal =
+                (a.language_preference !== undefined && a.language_preference >= 0) ||
+                (typeof a.format_note === 'string' && /original|default/i.test(a.format_note));
+            const bIsOriginal =
+                (b.language_preference !== undefined && b.language_preference >= 0) ||
+                (typeof b.format_note === 'string' && /original|default/i.test(b.format_note));
+
+            if (aIsOriginal !== bIsOriginal) {
+                return aIsOriginal ? -1 : 1;
+            }
+
+            const aPref =
+                typeof a.language_preference === 'number' ? a.language_preference : 0;
+            const bPref =
+                typeof b.language_preference === 'number' ? b.language_preference : 0;
+            if (aPref !== bPref) {
+                return bPref - aPref;
+            }
+
             const aRate =
                 Number(a.abr) ||
                 Number(a.tbr) ||
@@ -2836,9 +2855,9 @@ function buildVideoArgs(
     const format =
         height === 'best'
 
-            ? 'bestvideo+bestaudio/best'
+            ? 'bestvideo+bestaudio[format_note*=original]/bestvideo+bestaudio[language_preference>=0]/bestvideo+bestaudio/best'
 
-            : `bestvideo[height=${height}]+bestaudio/best[height=${height}]`;
+            : `bestvideo[height=${height}]+bestaudio[format_note*=original]/bestvideo[height=${height}]+bestaudio[language_preference>=0]/bestvideo[height=${height}]+bestaudio/best[height=${height}]/best`;
 
         let outputTemplate;
 
@@ -2870,6 +2889,9 @@ function buildVideoArgs(
         }
 
     const args = [
+
+        '-S',
+        height === 'best' ? 'res,vcodec:h264,lang,fps' : `res:${height},vcodec:h264,lang,fps`,
 
         '-f',
         format,
@@ -2950,8 +2972,11 @@ function buildAudioArgs(
 
     const args = [
 
+        '-S',
+        'lang,quality',
+
         '-f',
-        'bestaudio/best',
+        'ba[format_note*=original]/ba[language_preference>=0]/bestaudio/ba/best',
 
         '-x',
 

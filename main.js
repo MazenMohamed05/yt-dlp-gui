@@ -261,6 +261,38 @@ function cleanupDownloadsOnExit() {
     activeProcessesMap.clear();
 }
 
+function unitToBytes(value) {
+    if (!value) return 0;
+    const match = String(value).trim().match(/^([\d.]+)\s*(B|KiB|MiB|GiB|TiB|KB|MB|GB|TB)$/i);
+    if (!match) return 0;
+    const number = Number(match[1]);
+    const unit = match[2].toLowerCase();
+    const multipliers = {
+        'b': 1,
+        'kib': 1024,
+        'kb': 1000,
+        'mib': 1024 * 1024,
+        'mb': 1000 * 1000,
+        'gib': 1024 * 1024 * 1024,
+        'gb': 1000 * 1000 * 1000,
+        'tib': 1024 * 1024 * 1024 * 1024,
+        'tb': 1000 * 1000 * 1000 * 1000
+    };
+    return number * (multipliers[unit] || 1);
+}
+
+function formatBytes(bytes) {
+    if (!bytes || bytes <= 0) return '--';
+    const units = ['B', 'KiB', 'MiB', 'GiB', 'TiB'];
+    let value = bytes;
+    let unitIndex = 0;
+    while (value >= 1024 && unitIndex < units.length - 1) {
+        value /= 1024;
+        unitIndex++;
+    }
+    return `${value.toFixed(1)} ${units[unitIndex]}`;
+}
+
 /**
  * Executes a yt-dlp operation with automatic exponential/delayed retry logic.
  * Primarily guards against transient network interruptions, rate limiting,
@@ -402,7 +434,7 @@ function runYtDlp(
 
                     const match =
                         line.match(
-                            /\[download\]\s+(\d+(?:\.\d+)?)%(?:\s+of\s+([^\s]+))?(?:\s+at\s+([^\s]+))?(?:\s+ETA\s+([^\s]+))?/i
+                            /\[download\]\s+(\d+(?:\.\d+)?)%(?:\s+of\s+~?\s*([0-9.]+\s*(?:KiB|MiB|GiB|TiB|KB|MB|GB|TB|B)))?(?:\s+at\s+([^\s]+))?(?:\s+ETA\s+([^\s]+))?/i
                         );
 
 
@@ -415,8 +447,21 @@ function runYtDlp(
                     }
 
 
+                    const pct = parseFloat(match[1]);
+                    const totalRaw = match[2] || '';
+                    let sizeDetails = '';
+
+                    if (totalRaw) {
+                        const totalB = unitToBytes(totalRaw);
+                        if (totalB > 0) {
+                            const dlB = (totalB * pct) / 100;
+                            const remB = Math.max(0, totalB - dlB);
+                            sizeDetails = ` (${formatBytes(dlB)} / ${formatBytes(totalB)}, ${formatBytes(remB)} left)`;
+                        }
+                    }
+
                     const normalized =
-                        `[download] ${match[1]}%${match[2] ? ` of ${match[2]}` : ''} at ${match[3] || '--'} ETA ${match[4] || '--'}`;
+                        `[download] ${match[1]}%${totalRaw ? ` of ${totalRaw}` : ''}${sizeDetails} at ${match[3] || '--'} ETA ${match[4] || '--'}`;
 
 
                     console.log(
@@ -881,9 +926,17 @@ function createUnifiedProgressHandler(
                 totalDownloadBytes
             );
 
+        const remainingBytes =
+            Math.max(0, totalDownloadBytes - downloadedBytes);
+
+        const remainingText =
+            formatBytes(
+                remainingBytes
+            );
+
 
         const unifiedProgress =
-            `[download] ${overallPercent.toFixed(1)}% of ${totalText} at ${lastSpeed} ETA ${lastEta}`;
+            `[download] ${overallPercent.toFixed(1)}% of ${totalText} (${downloadedText} / ${totalText}, ${remainingText} left) at ${lastSpeed} ETA ${lastEta}`;
 
 
         console.log(
@@ -1285,6 +1338,15 @@ ipcMain.handle(
                     .map(
                         (format) => {
 
+                            const isOriginal =
+                                (format.language_preference !== undefined && format.language_preference >= 0) ||
+                                (typeof format.format_note === 'string' && /original|default/i.test(format.format_note));
+
+                            const langPref =
+                                typeof format.language_preference === 'number'
+                                    ? format.language_preference
+                                    : 0;
+
                             return {
 
                                 formatId:
@@ -1307,7 +1369,18 @@ ipcMain.handle(
 
                                 ext:
                                     format.ext ||
-                                    ''
+                                    '',
+
+                                isOriginal,
+
+                                languagePreference:
+                                    langPref,
+
+                                language:
+                                    format.language || '',
+
+                                formatNote:
+                                    format.format_note || ''
 
                             };
 
@@ -1316,6 +1389,17 @@ ipcMain.handle(
                     .sort(
                         (a, b) => {
 
+                            // 1. Prioritize original / non-dubbed audio tracks
+                            if (a.isOriginal !== b.isOriginal) {
+                                return a.isOriginal ? -1 : 1;
+                            }
+
+                            // 2. Prioritize higher language preference
+                            if (a.languagePreference !== b.languagePreference) {
+                                return b.languagePreference - a.languagePreference;
+                            }
+
+                            // 3. Known filesize preference
                             if (
                                 a.filesize > 0 &&
                                 b.filesize === 0
@@ -1324,7 +1408,6 @@ ipcMain.handle(
                                 return -1;
 
                             }
-
 
                             if (
                                 a.filesize === 0 &&
@@ -1335,7 +1418,7 @@ ipcMain.handle(
 
                             }
 
-
+                            // 4. Highest audio bitrate
                             return (
                                 b.abr -
                                 a.abr
@@ -1887,7 +1970,16 @@ ipcMain.handle(
                                         format.abr,
 
                                     ext:
-                                        format.ext
+                                        format.ext,
+
+                                    isOriginal:
+                                        format.isOriginal,
+
+                                    language:
+                                        format.language,
+
+                                    formatNote:
+                                        format.formatNote
 
                                 };
 
@@ -1909,7 +2001,16 @@ ipcMain.handle(
                                     bestAudio.abr,
 
                                 ext:
-                                    bestAudio.ext
+                                    bestAudio.ext,
+
+                                isOriginal:
+                                    bestAudio.isOriginal,
+
+                                language:
+                                    bestAudio.language,
+
+                                formatNote:
+                                    bestAudio.formatNote
 
                             }
                             : null
@@ -3145,16 +3246,18 @@ ipcMain.handle(
                 ) {
 
                     format =
-                        'bestvideo+bestaudio/best';
-                    formatSort = 'res,vcodec:h264,fps';
+                        'bestvideo+bestaudio[format_note*=original]/bestvideo+bestaudio[language_preference>=0]/bestvideo+bestaudio/best';
+                    formatSort = 'res,vcodec:h264,lang,fps';
 
                 } else {
 
                     format =
+                        `bestvideo[height<=?${height}]+bestaudio[format_note*=original]/` +
+                        `bestvideo[height<=?${height}]+bestaudio[language_preference>=0]/` +
                         `bestvideo[height<=?${height}]+bestaudio/` +
                         `best[height<=?${height}]/` +
                         'best';
-                    formatSort = `res:${height},vcodec:h264,fps`;
+                    formatSort = `res:${height},vcodec:h264,lang,fps`;
 
                 }
 
@@ -3312,17 +3415,19 @@ ipcMain.handle(
                         `%(title)s${audioRenameSuffix}.%(ext)s`
                     );
 
-                // Use the explicitly selected formatId (e.g., 251 for Opus or 140 for AAC m4a),
-                // falling back to the highest available audio bitrate.
+                // Prioritize original audio stream over dubs, falling back to best audio
                 const formatSpec =
                     (rawQuality && rawQuality !== 'best')
-                        ? `${rawQuality}/bestaudio/ba/best`
-                        : 'bestaudio/ba/best';
+                        ? `${rawQuality}/ba[format_note*=original]/ba[language_preference>=0]/bestaudio/ba/best`
+                        : 'ba[format_note*=original]/ba[language_preference>=0]/bestaudio/ba/best';
 
                 const args = [
 
                     '--js-runtimes',
                     `deno:${DENO_PATH}`,
+
+                    '-S',
+                    'lang,quality',
 
                     '--no-cache-dir',
 

@@ -111,6 +111,34 @@ if (cancelDownloadBtn) {
     });
 }
 
+function parseSizeToMB(sizeStr) {
+    if (!sizeStr) return 0;
+    const m = String(sizeStr).trim().match(/^([\d.]+)\s*(B|KiB|MiB|GiB|TiB|KB|MB|GB|TB)$/i);
+    if (!m) return 0;
+    const num = parseFloat(m[1]);
+    const unit = m[2].toLowerCase();
+    const mults = {
+        'b': 1 / (1024 * 1024),
+        'kib': 1 / 1024,
+        'kb': 1000 / (1024 * 1024),
+        'mib': 1,
+        'mb': (1000 * 1000) / (1024 * 1024),
+        'gib': 1024,
+        'gb': (1000 * 1000 * 1000) / (1024 * 1024),
+        'tib': 1024 * 1024,
+        'tb': (1000 * 1000 * 1000) / (1024 * 1024)
+    };
+    return num * (mults[unit] || 1);
+}
+
+function formatMB(mb) {
+    if (!mb || mb <= 0) return '0 MB';
+    if (mb >= 1024) {
+        return (mb / 1024).toFixed(2) + ' GB';
+    }
+    return mb.toFixed(1) + ' MB';
+}
+
 function showConflictPrompt({ isPlaylist, conflicts, totalCount }) {
     return new Promise((resolve) => {
         const modal = document.getElementById("conflictModal");
@@ -140,41 +168,41 @@ function showConflictPrompt({ isPlaylist, conflicts, totalCount }) {
         };
 
         if (isPlaylist) {
-            titleEl.textContent = "Files Already Exist / ملفات موجودة بالفعل";
-            msgEl.textContent = `${conflicts.length} of ${totalCount} files already exist in this folder. What would you like to do?`;
+            titleEl.textContent = "ملفات موجودة بالفعل / Files Already Exist";
+            msgEl.textContent = `يوجد ${conflicts.length} من أصل ${totalCount} ملف موجودة بالفعل في مجلد الحفظ. ماذا تريد أن تفعل؟`;
 
             if (fileEl) {
                 fileEl.classList.remove("hidden");
-                fileEl.textContent = conflicts.slice(0, 4).map(c => c.fileName).join("\n") + (conflicts.length > 4 ? `\n... (+${conflicts.length - 4} more)` : "");
+                fileEl.textContent = conflicts.slice(0, 4).map(c => c.fileName).join("\n") + (conflicts.length > 4 ? `\n... (+${conflicts.length - 4} ملف إضافي)` : "");
             }
 
             const skipBtn = document.createElement("button");
             skipBtn.className = "conflict-btn conflict-btn-skip";
-            skipBtn.textContent = "⏭️ Skip Existing / تخطي";
+            skipBtn.textContent = "⏭️ تخطي الموجود (Skip)";
             skipBtn.onclick = () => close("skip");
             actionsEl.appendChild(skipBtn);
 
             const overwriteBtn = document.createElement("button");
             overwriteBtn.className = "conflict-btn conflict-btn-overwrite";
-            overwriteBtn.textContent = "🔄 Replace All / استبدال";
+            overwriteBtn.textContent = "🔄 استبدال الكل (Replace)";
             overwriteBtn.onclick = () => close("overwrite");
             actionsEl.appendChild(overwriteBtn);
 
             const renameBtn = document.createElement("button");
             renameBtn.className = "conflict-btn conflict-btn-rename";
-            renameBtn.textContent = "📑 Keep Both / ترقيم (1)";
+            renameBtn.textContent = "📑 ترقيم (1) وحفظ الاثنين (Keep Both)";
             renameBtn.onclick = () => close("rename");
             actionsEl.appendChild(renameBtn);
 
             const cancelBtn = document.createElement("button");
             cancelBtn.className = "conflict-btn conflict-btn-cancel";
-            cancelBtn.textContent = "✖ Cancel / إلغاء";
+            cancelBtn.textContent = "✖ إلغاء (Cancel)";
             cancelBtn.onclick = () => close("cancel");
             actionsEl.appendChild(cancelBtn);
         } else {
-            const existingName = (conflicts[0] && conflicts[0].fileName) || "File";
-            titleEl.textContent = "File Already Exists / الملف موجود مسبقاً";
-            msgEl.textContent = "A file with this name already exists in the selected folder. What would you like to do?";
+            const existingName = (conflicts[0] && conflicts[0].fileName) || "الملف";
+            titleEl.textContent = "الملف موجود بالفعل / File Already Exists";
+            msgEl.textContent = `الملف "${existingName}" موجود بالفعل في هذا المجلد. ماذا تريد أن تفعل؟`;
 
             if (fileEl) {
                 fileEl.classList.remove("hidden");
@@ -183,19 +211,19 @@ function showConflictPrompt({ isPlaylist, conflicts, totalCount }) {
 
             const overwriteBtn = document.createElement("button");
             overwriteBtn.className = "conflict-btn conflict-btn-overwrite";
-            overwriteBtn.textContent = "🔄 Replace / استبدال";
+            overwriteBtn.textContent = "🔄 استبدال (Replace)";
             overwriteBtn.onclick = () => close("overwrite");
             actionsEl.appendChild(overwriteBtn);
 
             const renameBtn = document.createElement("button");
             renameBtn.className = "conflict-btn conflict-btn-rename";
-            renameBtn.textContent = "📑 Keep Both / ترقيم (1)";
+            renameBtn.textContent = "📑 ترقيم (1) وحفظ الاثنين (Keep Both)";
             renameBtn.onclick = () => close("rename");
             actionsEl.appendChild(renameBtn);
 
             const cancelBtn = document.createElement("button");
             cancelBtn.className = "conflict-btn conflict-btn-cancel";
-            cancelBtn.textContent = "✖ Cancel / إلغاء";
+            cancelBtn.textContent = "✖ إلغاء (Cancel)";
             cancelBtn.onclick = () => close("cancel");
             actionsEl.appendChild(cancelBtn);
         }
@@ -304,59 +332,50 @@ window.electronAPI.onDownloadProgress(
             return;
         }
 
+        const percentMatch = text.match(/(\d+(?:\.\d+)?)%/);
+        const speedMatch = text.match(/at\s+([^\s]+\/s)/i);
+        const etaMatch = text.match(/ETA\s+([0-9:]+)/i);
 
-        const percentMatch =
-            text.match(
-                /(\d+(?:\.\d+)?)%/
-            );
+        const percent = percentMatch ? parseFloat(percentMatch[1]) : null;
+        const speed = speedMatch ? speedMatch[1] : null;
+        const eta = etaMatch ? etaMatch[1] : null;
 
+        // Rich size matching e.g. "of 50.0MiB (12.5MiB / 50.0MiB, 37.5MiB left)"
+        const richSizeMatch = text.match(/\(([\d.]+\s*[A-Za-z]+)\s*\/\s*([\d.]+\s*[A-Za-z]+)(?:,\s*([\d.]+\s*[A-Za-z]+)\s+left)?\)/i);
+        const totalMatch = text.match(/of\s+~?\s*([\d.]+\s*(?:KiB|MiB|GiB|TiB|KB|MB|GB|TB|B))/i);
 
-        const speedMatch =
-            text.match(
-                /at\s+([^\s]+\/s)/i
-            );
+        let downloadedSize = null;
+        let totalSize = null;
+        let remainingSize = null;
 
-
-        const etaMatch =
-            text.match(
-                /ETA\s+([0-9:]+)/i
-            );
-
-
-        const sizeMatch =
-            text.match(
-                /of\s+([0-9.]+\s*(?:KiB|MiB|GiB|KB|MB|GB))/i
-            );
-
-
-        const percent =
-            percentMatch
-                ? parseFloat(
-                    percentMatch[1]
-                )
-                : null;
-
-
-        const speed =
-            speedMatch
-                ? speedMatch[1]
-                : null;
-
-
-        const eta =
-            etaMatch
-                ? etaMatch[1]
-                : null;
-
-
-        const totalSize =
-            sizeMatch
-                ? sizeMatch[1]
-                : null;
-
+        if (richSizeMatch) {
+            downloadedSize = richSizeMatch[1];
+            totalSize = richSizeMatch[2];
+            remainingSize = richSizeMatch[3] || null;
+        } else if (totalMatch) {
+            totalSize = totalMatch[1];
+            if (percent !== null) {
+                const totalMB = parseSizeToMB(totalSize);
+                if (totalMB > 0) {
+                    const dlMB = (totalMB * percent) / 100;
+                    const remMB = Math.max(0, totalMB - dlMB);
+                    downloadedSize = formatMB(dlMB);
+                    totalSize = formatMB(totalMB);
+                    remainingSize = formatMB(remMB);
+                }
+            }
+        }
 
         if (window.queueManager) {
-            window.queueManager.onProgress(taskId, { text, percent, speed, eta, totalSize });
+            window.queueManager.onProgress(taskId, {
+                text,
+                percent,
+                speed,
+                eta,
+                totalSize,
+                downloadedSize,
+                remainingSize
+            });
         }
 
         if (
@@ -368,63 +387,26 @@ window.electronAPI.onDownloadProgress(
             return;
         }
 
+        downloadProgress.classList.remove("hidden");
 
-        downloadProgress.classList.remove(
-            "hidden"
-        );
-
-
-        if (
-            percent !== null
-        ) {
-
-            progressPercent.textContent =
-                `${percent.toFixed(1)}%`;
-
-            progressBarFill.style.width =
-                `${Math.min(
-                    percent,
-                    100
-                )}%`;
-
+        if (percent !== null) {
+            progressPercent.textContent = `${percent.toFixed(1)}%`;
+            progressBarFill.style.width = `${Math.min(percent, 100)}%`;
         }
-
 
         if (speed) {
-
-            progressSpeed.textContent =
-                speed;
-
+            progressSpeed.textContent = speed;
         }
-
 
         if (eta) {
-
-            progressEta.textContent =
-                `ETA ${eta}`;
-
+            progressEta.textContent = `ETA ${eta}`;
         }
 
-
-        if (totalSize) {
-
-            progressTotal.textContent =
-                totalSize;
-
-        }
-
-
-        const downloadedMatch =
-            text.match(
-                /(\d+(?:\.\d+)?\s*(?:KiB|MiB|GiB|KB|MB|GB))\s+of/i
-            );
-
-
-        if (downloadedMatch) {
-
-            progressDownloaded.textContent =
-                downloadedMatch[1];
-
+        if (downloadedSize && totalSize) {
+            progressDownloaded.textContent = `${downloadedSize} / ${totalSize}`;
+            progressTotal.textContent = remainingSize ? `باقي ${remainingSize}` : totalSize;
+        } else if (totalSize) {
+            progressTotal.textContent = totalSize;
         }
 
     }
@@ -1226,6 +1208,14 @@ function buildAudioList(data) {
 
             }
 
+            if (format.isOriginal) {
+                text += " (Original)";
+            } else if (format.formatNote) {
+                const noteClean = String(format.formatNote).split(",")[0].trim();
+                if (noteClean && !/original|default/i.test(noteClean)) {
+                    text += ` [${noteClean}]`;
+                }
+            }
 
             option.textContent =
                 text;
@@ -2247,40 +2237,94 @@ document
             }));
         }
 
-        const downloadButtonEl = document.getElementById("downloadButton");
-        if (downloadButtonEl) {
-            downloadButtonEl.addEventListener("click", () => {
-                const tasks = buildTasksFromCurrentForm();
-                if (!tasks || tasks.length === 0) return;
-                if (window.queueManager) {
-                    window.queueManager.addTasks(tasks, true);
+        async function handleDownloadOrQueue(autoStart = true) {
+            const rawTasks = buildTasksFromCurrentForm();
+            if (!rawTasks || rawTasks.length === 0) return;
+
+            let finalCollisionAction = 'overwrite';
+            const outputDir = rawTasks[0].outputDir;
+            const type = rawTasks[0].type;
+            const audioFormat = rawTasks[0].quality;
+
+            try {
+                if (window.electronAPI && window.electronAPI.checkExistingFiles) {
+                    const checkRes = await window.electronAPI.checkExistingFiles({
+                        outputDir,
+                        items: rawTasks.map(t => ({ title: t.title })),
+                        type,
+                        audioFormat,
+                        language: rawTasks[0].quality
+                    });
+
+                    if (checkRes && checkRes.hasConflict) {
+                        const action = await showConflictPrompt({
+                            isPlaylist: rawTasks.length > 1,
+                            conflicts: checkRes.conflicts,
+                            totalCount: rawTasks.length
+                        });
+
+                        if (action === 'cancel') {
+                            return;
+                        }
+
+                        if (action === 'skip') {
+                            const conflictTitles = new Set(checkRes.conflicts.map(c => c.title));
+                            const nonConflictingTasks = rawTasks.filter(t => !conflictTitles.has(t.title));
+                            if (nonConflictingTasks.length === 0) {
+                                showToast('تم تخطي جميع الملفات الموجودة بالفعل / All existing items skipped.', 'ℹ️');
+                                return;
+                            }
+                            rawTasks.length = 0;
+                            rawTasks.push(...nonConflictingTasks);
+                            finalCollisionAction = 'overwrite';
+                        } else {
+                            finalCollisionAction = action; // 'rename' or 'overwrite'
+                        }
+                    }
                 }
+            } catch (err) {
+                console.warn('Conflict check error:', err);
+            }
+
+            const finalTasks = rawTasks.map(t => ({
+                ...t,
+                options: {
+                    ...t.options,
+                    collisionAction: finalCollisionAction
+                }
+            }));
+
+            if (window.queueManager) {
+                window.queueManager.addTasks(finalTasks, autoStart);
+            }
+
+            if (autoStart) {
                 const navQueue = document.getElementById("navQueue");
                 if (navQueue) navQueue.click();
                 showToast(
-                    tasks.length > 1
-                        ? `Started downloading ${tasks.length} items`
-                        : `Started downloading: ${tasks[0].title}`,
+                    finalTasks.length > 1
+                        ? `Started downloading ${finalTasks.length} items`
+                        : `Started downloading: ${finalTasks[0].title}`,
                     '🚀'
                 );
-            });
+            } else {
+                showToast(
+                    finalTasks.length > 1
+                        ? `Added ${finalTasks.length} items to Queue`
+                        : `Added to Queue: ${finalTasks[0].title}`,
+                    '➕'
+                );
+            }
+        }
+
+        const downloadButtonEl = document.getElementById("downloadButton");
+        if (downloadButtonEl) {
+            downloadButtonEl.addEventListener("click", () => handleDownloadOrQueue(true));
         }
 
         const addToQueueButtonEl = document.getElementById("addToQueueButton");
         if (addToQueueButtonEl) {
-            addToQueueButtonEl.addEventListener("click", () => {
-                const tasks = buildTasksFromCurrentForm();
-                if (!tasks || tasks.length === 0) return;
-                if (window.queueManager) {
-                    window.queueManager.addTasks(tasks, true);
-                }
-                showToast(
-                    tasks.length > 1
-                        ? `Added ${tasks.length} items to Queue`
-                        : `Added to Queue: ${tasks[0].title}`,
-                    '➕'
-                );
-            });
+            addToQueueButtonEl.addEventListener("click", () => handleDownloadOrQueue(false));
         }
 
 
@@ -2839,6 +2883,8 @@ class QueueManager {
         if (metrics.speed) task.speed = metrics.speed;
         if (metrics.eta) task.eta = metrics.eta;
         if (metrics.totalSize) task.totalSize = metrics.totalSize;
+        if (metrics.downloadedSize) task.downloadedSize = metrics.downloadedSize;
+        if (metrics.remainingSize) task.remainingSize = metrics.remainingSize;
 
         this.updateTaskProgressUI(task);
     }
@@ -3081,7 +3127,10 @@ class QueueManager {
                     </div>
 
                     <div class="queue-item-meta">
-                        <span id="percent_${task.id}" class="queue-item-percent">${task.error ? `<span style="color:#f87171;">${task.error}</span>` : (pct > 0 ? pct.toFixed(1) + '%' : (task.status === 'downloading' ? 'Connecting...' : 'Ready'))}</span>
+                        <div class="queue-item-meta-left">
+                            <span id="percent_${task.id}" class="queue-item-percent">${task.error ? `<span style="color:#f87171;">${task.error}</span>` : (pct > 0 ? pct.toFixed(1) + '%' : (task.status === 'downloading' ? 'Connecting...' : 'Ready'))}</span>
+                            <span id="size_${task.id}" class="queue-item-size-info">${task.downloadedSize && task.totalSize ? `${task.downloadedSize} / ${task.totalSize} • باقي ${task.remainingSize || '--'}` : (task.totalSize ? task.totalSize : '')}</span>
+                        </div>
                         <div class="queue-item-speed-eta">
                             <span id="speed_${task.id}" class="queue-item-speed">${task.speed || ''}</span>
                             <span id="eta_${task.id}" class="queue-item-eta">${task.eta ? 'ETA ' + task.eta : ''}</span>
@@ -3113,6 +3162,7 @@ class QueueManager {
     updateTaskProgressUI(task) {
         const bar = document.getElementById('progress_' + task.id);
         const pctEl = document.getElementById('percent_' + task.id);
+        const sizeEl = document.getElementById('size_' + task.id);
         const speedEl = document.getElementById('speed_' + task.id);
         const etaEl = document.getElementById('eta_' + task.id);
 
@@ -3121,6 +3171,13 @@ class QueueManager {
         }
         if (pctEl && task.progressPercent !== undefined) {
             pctEl.textContent = task.progressPercent.toFixed(1) + '%';
+        }
+        if (sizeEl) {
+            if (task.downloadedSize && task.totalSize) {
+                sizeEl.textContent = `${task.downloadedSize} / ${task.totalSize} • باقي ${task.remainingSize || '--'}`;
+            } else if (task.totalSize) {
+                sizeEl.textContent = task.totalSize;
+            }
         }
         if (speedEl && task.speed) {
             speedEl.textContent = task.speed;
