@@ -124,16 +124,24 @@ chooseDownloadFolder: () => {
 
 },
 
-        pauseDownload: () => {
-            return ipcRenderer.invoke('pause-download');
+        pauseDownload: (taskId = null) => {
+            return ipcRenderer.invoke('pause-download', taskId);
         },
 
-        resumeDownload: () => {
-            return ipcRenderer.invoke('resume-download');
+        resumeDownload: (taskId = null) => {
+            return ipcRenderer.invoke('resume-download', taskId);
         },
 
-        cancelDownload: () => {
-            return ipcRenderer.invoke('cancel-download');
+        cancelDownload: (taskId = null) => {
+            return ipcRenderer.invoke('cancel-download', taskId);
+        },
+
+        openFile: (filePath) => {
+            return ipcRenderer.invoke('open-file', filePath);
+        },
+
+        showInFolder: (filePath) => {
+            return ipcRenderer.invoke('show-in-folder', filePath);
         },
 
         /**

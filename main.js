@@ -9,7 +9,8 @@ const {
     app,
     BrowserWindow,
     ipcMain,
-    dialog
+    dialog,
+    shell
 } = require('electron');
 
 const path = require('path');
@@ -216,12 +217,22 @@ function getNextRenameIndex(outputDir, rawTitle, type, audioFormat = 'mp3') {
 // yt-dlp Process Execution & Resilience Layer
 // ============================================================================
 
-let activeYtDlpProcess = null;
-const downloadState = {
-    isCancelled: false,
-    isPaused: false,
-    resumePromiseResolve: null
-};
+const activeProcessesMap = new Map(); // taskId -> childProcess
+const taskStateMap = new Map(); // taskId -> { isCancelled, isPaused, resumePromiseResolve }
+
+function getTaskState(taskId = 'default') {
+    if (!taskStateMap.has(taskId)) {
+        taskStateMap.set(taskId, {
+            isCancelled: false,
+            isPaused: false,
+            resumePromiseResolve: null
+        });
+    }
+    return taskStateMap.get(taskId);
+}
+
+// Backward-compatible downloadState reference
+const downloadState = getTaskState('default');
 
 function killProcessTree(pid) {
     if (!pid) return;
@@ -233,12 +244,19 @@ function killProcessTree(pid) {
 }
 
 function cleanupDownloadsOnExit() {
-    downloadState.isCancelled = true;
-    downloadState.isPaused = false;
-    if (activeYtDlpProcess && activeYtDlpProcess.pid) {
-        killProcessTree(activeYtDlpProcess.pid);
-        activeYtDlpProcess = null;
+    for (const [taskId, state] of taskStateMap.entries()) {
+        state.isCancelled = true;
+        state.isPaused = false;
+        if (typeof state.resumePromiseResolve === 'function') {
+            state.resumePromiseResolve();
+        }
     }
+    for (const [taskId, proc] of activeProcessesMap.entries()) {
+        if (proc && proc.pid) {
+            killProcessTree(proc.pid);
+        }
+    }
+    activeProcessesMap.clear();
 }
 
 /**
@@ -251,48 +269,32 @@ function cleanupDownloadsOnExit() {
  * @param {number} [maxRetries=3] - Maximum retry attempts before giving up.
  * @returns {Promise<string>} - Resolves with standard output (stdout) on success.
  */
-async function downloadWithRetry(args, onProgress = null, maxRetries = 3) {
+async function downloadWithRetry(args, onProgress = null, maxRetries = 3, taskId = null) {
     if (typeof onProgress === 'number') {
         maxRetries = onProgress;
         onProgress = null;
     }
 
+    const state = taskId ? getTaskState(taskId) : null;
     let attempt = 1;
     while (attempt <= maxRetries) {
-        if (downloadState.isCancelled) {
+        if (state && state.isCancelled) {
             throw new Error('DOWNLOAD_CANCELLED');
         }
 
-        if (downloadState.isPaused) {
-            await new Promise((resolve) => {
-                downloadState.resumePromiseResolve = resolve;
-            });
-            if (downloadState.isCancelled) {
-                throw new Error('DOWNLOAD_CANCELLED');
-            }
+        if (state && state.isPaused) {
+            throw new Error('DOWNLOAD_PAUSED');
         }
 
         try {
-            const res = await runYtDlp(args, onProgress);
-            if (res === 'PAUSED') {
-                await new Promise((resolve) => {
-                    downloadState.resumePromiseResolve = resolve;
-                });
-                if (downloadState.isCancelled) {
-                    throw new Error('DOWNLOAD_CANCELLED');
-                }
-                continue;
-            }
+            const res = await runYtDlp(args, onProgress, taskId);
             return res;
         } catch (error) {
-            if (downloadState.isCancelled || error.message === 'DOWNLOAD_CANCELLED') {
+            if (state && (state.isCancelled || error.message === 'DOWNLOAD_CANCELLED')) {
                 throw new Error('DOWNLOAD_CANCELLED');
             }
-            if (downloadState.isPaused) {
-                await new Promise((resolve) => {
-                    downloadState.resumePromiseResolve = resolve;
-                });
-                continue;
+            if (state && (state.isPaused || error.message === 'DOWNLOAD_PAUSED')) {
+                throw new Error('DOWNLOAD_PAUSED');
             }
 
             console.warn(`Attempt ${attempt} failed with error: ${error.message}`);
@@ -317,14 +319,20 @@ async function downloadWithRetry(args, onProgress = null, maxRetries = 3) {
  */
 function runYtDlp(
     args,
-    onProgress = null
+    onProgress = null,
+    taskId = null
 ) {
 
     return new Promise(
         (resolve, reject) => {
 
-            if (downloadState.isCancelled) {
+            const state = taskId ? getTaskState(taskId) : null;
+            if (state && state.isCancelled) {
                 return reject(new Error('DOWNLOAD_CANCELLED'));
+            }
+
+            if (state && state.isPaused) {
+                return reject(new Error('DOWNLOAD_PAUSED'));
             }
 
             const process = spawn(
@@ -334,7 +342,9 @@ function runYtDlp(
                     windowsHide: true
                 }
             );
-            activeYtDlpProcess = process;
+            if (taskId) {
+                activeProcessesMap.set(taskId, process);
+            }
 
 
             let stdout = '';
@@ -490,14 +500,16 @@ function runYtDlp(
                     }
 
 
-                    activeYtDlpProcess = null;
+                    if (taskId) {
+                        activeProcessesMap.delete(taskId);
+                    }
 
-                    if (downloadState.isCancelled) {
+                    if (state && state.isCancelled) {
                         return reject(new Error('DOWNLOAD_CANCELLED'));
                     }
 
-                    if (downloadState.isPaused) {
-                        return resolve('PAUSED');
+                    if (state && state.isPaused) {
+                        return reject(new Error('DOWNLOAD_PAUSED'));
                     }
 
                     if (
@@ -899,7 +911,8 @@ function createUnifiedProgressHandler(
  */
 function sendProgress(
     event,
-    text
+    text,
+    taskId = null
 ) {
 
     if (
@@ -915,7 +928,7 @@ function sendProgress(
 
     event.sender.send(
         'download-progress',
-        text
+        taskId ? { taskId, text } : text
     );
 
 }
@@ -1946,6 +1959,10 @@ ipcMain.handle(
 ipcMain.handle(
     'download-subtitles',
     async (event, options) => {
+        const taskId =
+            options && typeof options.taskId === 'string' && options.taskId.trim()
+                ? options.taskId.trim()
+                : null;
 
         try {
 
@@ -1982,6 +1999,11 @@ ipcMain.handle(
                 typeof options.language === 'string'
                     ? options.language.trim()
                     : '';
+
+            const collisionAction =
+                typeof options.collisionAction === 'string'
+                    ? options.collisionAction.trim()
+                    : 'overwrite';
 
 
             if (
@@ -2056,6 +2078,12 @@ ipcMain.handle(
                     i++
                 ) {
 
+                    if (taskId) {
+                        const taskState = getTaskState(taskId);
+                        if (taskState.isCancelled) throw new Error('DOWNLOAD_CANCELLED');
+                        if (taskState.isPaused) throw new Error('DOWNLOAD_PAUSED');
+                    }
+
                     const entry =
                         playlistEntries[i];
 
@@ -2129,12 +2157,6 @@ ipcMain.handle(
                                     '--js-runtimes',
                                     `deno:${DENO_PATH}`,
 
-                                    '--extractor-args',
-                                    'youtube:player_client=web,android',
-
-                                    '--user-agent',
-                                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
-
                                     '--no-cache-dir',
 
                                     '--sleep-requests',
@@ -2144,7 +2166,7 @@ ipcMain.handle(
                                     '2',
 
                                     '--retries',
-                                    '5',
+                                    '2',
 
                                     '--retry-sleep',
                                     'http:exp=2:15',
@@ -2160,16 +2182,14 @@ ipcMain.handle(
                                     '--write-auto-subs',
 
                                     '--sub-langs',
-                                    language,
+                                    `${language},${language}.*`,
 
                                     '--sub-format',
                                     'vtt',
 
                                     '--windows-filenames',
 
-                    '--force-overwrites',
-
-                    '--force-overwrites',
+                                    '--force-overwrites',
 
                                     '-o',
                                     playlistOutputTemplate,
@@ -2185,7 +2205,8 @@ ipcMain.handle(
                                         await downloadWithRetry(
                                             downloadArgs,
                                             null,
-                                            3
+                                            3,
+                                            taskId
                                         );
 
 
@@ -2480,21 +2501,13 @@ ipcMain.handle(
             }
 
 
-            const downloadSource =
-                async (
-                    source
-                ) => {
+            const downloadSubtitlesCall =
+                async () => {
 
                     const args = [
 
                         '--js-runtimes',
                         `deno:${DENO_PATH}`,
-
-                        '--extractor-args',
-                        'youtube:player_client=web,android',
-
-                        '--user-agent',
-                        'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
 
                         '--no-cache-dir',
 
@@ -2505,7 +2518,7 @@ ipcMain.handle(
                         '2',
 
                         '--retries',
-                        '5',
+                        '2',
 
                         '--retry-sleep',
                         'http:exp=2:15',
@@ -2516,12 +2529,12 @@ ipcMain.handle(
 
                         '--skip-download',
 
-                        source === 'auto'
-                            ? '--write-auto-subs'
-                            : '--write-subs',
+                        '--write-subs',
+
+                        '--write-auto-subs',
 
                         '--sub-langs',
-                        language,
+                        `${language},${language}.*`,
 
                         '--sub-format',
                         'vtt',
@@ -2544,7 +2557,8 @@ ipcMain.handle(
                             await downloadWithRetry(
                                 args,
                                 null,
-                                3
+                                2,
+                                taskId
                             );
 
 
@@ -2571,7 +2585,7 @@ ipcMain.handle(
                     } catch (error) {
 
                         console.log(
-                            "Subtitle source failed:",
+                            "Subtitle download failed:",
                             error.message
                         );
 
@@ -2582,27 +2596,8 @@ ipcMain.handle(
                 };
 
 
-            let success =
-                await downloadSource(
-                    'manual'
-                );
-
-
-            if (
-                !success
-            ) {
-
-                console.log(
-                    "Trying automatic subtitles..."
-                );
-
-
-                success =
-                    await downloadSource(
-                        'auto'
-                    );
-
-            }
+            const success =
+                await downloadSubtitlesCall();
 
 
             if (
@@ -2733,6 +2728,23 @@ ipcMain.handle(
 
         } catch (error) {
 
+            const taskState = getTaskState(taskId || 'default');
+            if (error.message === 'DOWNLOAD_CANCELLED' || taskState.isCancelled) {
+                return {
+                    success: false,
+                    cancelled: true,
+                    message: 'Subtitle download cancelled by user.'
+                };
+            }
+
+            if (error.message === 'DOWNLOAD_PAUSED' || taskState.isPaused) {
+                return {
+                    success: false,
+                    paused: true,
+                    message: 'Subtitle download paused by user.'
+                };
+            }
+
             console.error(
                 'Subtitle download error:',
                 error
@@ -2759,38 +2771,111 @@ ipcMain.handle(
 // IPC Handler: Media Download Pipeline (Video & Audio)
 // ============================================================================
 
-ipcMain.handle('pause-download', () => {
-    downloadState.isPaused = true;
-    if (activeYtDlpProcess && activeYtDlpProcess.pid) {
-        killProcessTree(activeYtDlpProcess.pid);
-        activeYtDlpProcess = null;
+ipcMain.handle('pause-download', (event, taskId = 'default') => {
+    if (taskId === 'all') {
+        for (const [id, state] of taskStateMap.entries()) {
+            state.isPaused = true;
+        }
+        for (const [id, proc] of activeProcessesMap.entries()) {
+            if (proc && proc.pid) killProcessTree(proc.pid);
+        }
+        activeProcessesMap.clear();
+        return { success: true, isPaused: true };
+    }
+    const state = getTaskState(taskId);
+    state.isPaused = true;
+    const proc = activeProcessesMap.get(taskId);
+    if (proc && proc.pid) {
+        killProcessTree(proc.pid);
+        activeProcessesMap.delete(taskId);
     }
     return { success: true, isPaused: true };
 });
 
-ipcMain.handle('resume-download', () => {
-    downloadState.isPaused = false;
-    if (typeof downloadState.resumePromiseResolve === 'function') {
-        const resolve = downloadState.resumePromiseResolve;
-        downloadState.resumePromiseResolve = null;
+ipcMain.handle('resume-download', (event, taskId = 'default') => {
+    if (taskId === 'all') {
+        for (const [id, state] of taskStateMap.entries()) {
+            state.isPaused = false;
+            if (typeof state.resumePromiseResolve === 'function') {
+                const resolve = state.resumePromiseResolve;
+                state.resumePromiseResolve = null;
+                resolve();
+            }
+        }
+        return { success: true, isPaused: false };
+    }
+    const state = getTaskState(taskId);
+    state.isPaused = false;
+    if (typeof state.resumePromiseResolve === 'function') {
+        const resolve = state.resumePromiseResolve;
+        state.resumePromiseResolve = null;
         resolve();
     }
     return { success: true, isPaused: false };
 });
 
-ipcMain.handle('cancel-download', () => {
-    downloadState.isCancelled = true;
-    downloadState.isPaused = false;
-    if (typeof downloadState.resumePromiseResolve === 'function') {
-        const resolve = downloadState.resumePromiseResolve;
-        downloadState.resumePromiseResolve = null;
+ipcMain.handle('cancel-download', (event, taskId = 'default') => {
+    if (taskId === 'all') {
+        for (const [id, state] of taskStateMap.entries()) {
+            state.isCancelled = true;
+            state.isPaused = false;
+            if (typeof state.resumePromiseResolve === 'function') {
+                const resolve = state.resumePromiseResolve;
+                state.resumePromiseResolve = null;
+                resolve();
+            }
+        }
+        for (const [id, proc] of activeProcessesMap.entries()) {
+            if (proc && proc.pid) killProcessTree(proc.pid);
+        }
+        activeProcessesMap.clear();
+        return { success: true, isCancelled: true };
+    }
+    const state = getTaskState(taskId);
+    state.isCancelled = true;
+    state.isPaused = false;
+    if (typeof state.resumePromiseResolve === 'function') {
+        const resolve = state.resumePromiseResolve;
+        state.resumePromiseResolve = null;
         resolve();
     }
-    if (activeYtDlpProcess && activeYtDlpProcess.pid) {
-        killProcessTree(activeYtDlpProcess.pid);
-        activeYtDlpProcess = null;
+    const proc = activeProcessesMap.get(taskId);
+    if (proc && proc.pid) {
+        killProcessTree(proc.pid);
+        activeProcessesMap.delete(taskId);
     }
     return { success: true, isCancelled: true };
+});
+
+ipcMain.handle('open-file', async (event, filePath) => {
+    try {
+        if (!filePath || !fs.existsSync(filePath)) {
+            return { success: false, message: 'File does not exist' };
+        }
+        const err = await shell.openPath(filePath);
+        if (err) return { success: false, message: err };
+        return { success: true };
+    } catch (e) {
+        return { success: false, message: e.message };
+    }
+});
+
+ipcMain.handle('show-in-folder', async (event, filePath) => {
+    try {
+        if (!filePath) return { success: false, message: 'Invalid path' };
+        if (fs.existsSync(filePath)) {
+            shell.showItemInFolder(filePath);
+            return { success: true };
+        }
+        const dir = path.dirname(filePath);
+        if (fs.existsSync(dir)) {
+            await shell.openPath(dir);
+            return { success: true };
+        }
+        return { success: false, message: 'Path does not exist' };
+    } catch (e) {
+        return { success: false, message: e.message };
+    }
 });
 
 /**
@@ -2895,9 +2980,16 @@ ipcMain.handle(
                     ? options.title.trim()
                     : '';
 
-            downloadState.isCancelled = false;
-            downloadState.isPaused = false;
-            downloadState.resumePromiseResolve = null;
+            const embedThumbnail = options.embedThumbnail !== false;
+            const embedMetadata = options.embedMetadata !== false;
+            const sponsorBlock = !!options.sponsorBlock;
+            const embedSubs = !!options.embedSubs;
+
+            const taskId = typeof options.taskId === 'string' && options.taskId.trim() ? options.taskId.trim() : 'default';
+            const currentTaskState = getTaskState(taskId);
+            currentTaskState.isCancelled = false;
+            currentTaskState.isPaused = false;
+            currentTaskState.resumePromiseResolve = null;
 
 
             const outputDir =
@@ -3020,7 +3112,8 @@ ipcMain.handle(
 
                     '--no-playlist',
 
-                    ...(collisionAction === 'overwrite' ? ['--force-overwrites'] : ['-c']),
+                    '-c',
+                    '--part',
 
                     '-f',
                     format,
@@ -3033,6 +3126,11 @@ ipcMain.handle(
 
                     '--remux-video',
                     'mp4',
+
+                    ...(embedThumbnail ? ['--embed-thumbnail', '--convert-thumbnails', 'jpg'] : []),
+                    ...(embedMetadata ? ['--embed-metadata'] : []),
+                    ...(sponsorBlock ? ['--sponsorblock-remove', 'sponsor,selfpromo,interaction'] : []),
+                    ...(embedSubs ? ['--embed-subs', '--sub-langs', 'all,-live_chat'] : []),
 
                     '--windows-filenames',
 
@@ -3070,7 +3168,8 @@ ipcMain.handle(
 
                             sendProgress(
                                 event,
-                                progressText
+                                progressText,
+                                taskId
                             );
 
                         }
@@ -3080,9 +3179,11 @@ ipcMain.handle(
                 await downloadWithRetry(
                     args,
                     unifiedProgress,
-                    3
+                    3,
+                    taskId
                 );
 
+                const foundVideo = videoTitle ? findExistingFile(outputDir, videoTitle, 'video') : null;
 
                 return {
 
@@ -3091,7 +3192,9 @@ ipcMain.handle(
                     message:
                         'Video downloaded and merged successfully.',
 
-                    outputDir
+                    outputDir,
+
+                    filePath: foundVideo ? path.join(outputDir, foundVideo) : null
 
                 };
 
@@ -3146,7 +3249,8 @@ ipcMain.handle(
 
                     '--no-playlist',
 
-                    ...(collisionAction === 'overwrite' ? ['--force-overwrites'] : ['-c']),
+                    '-c',
+                    '--part',
 
                     '-f',
                     formatSpec,
@@ -3155,6 +3259,10 @@ ipcMain.handle(
 
                     '--ffmpeg-location',
                     FFMPEG_PATH,
+
+                    ...(embedThumbnail ? ['--embed-thumbnail', '--convert-thumbnails', 'jpg'] : []),
+                    ...(embedMetadata ? ['--embed-metadata'] : []),
+                    ...(sponsorBlock ? ['--sponsorblock-remove', 'sponsor,selfpromo,interaction'] : []),
 
                     '--windows-filenames',
 
@@ -3191,13 +3299,16 @@ ipcMain.handle(
 
                         sendProgress(
                             event,
-                            progressText
+                            progressText,
+                            taskId
                         );
 
                     },
-                    3
+                    3,
+                    taskId
                 );
 
+                const foundAudio = videoTitle ? findExistingFile(outputDir, videoTitle, 'audio', audioFormat) : null;
 
                 return {
 
@@ -3206,7 +3317,9 @@ ipcMain.handle(
                     message:
                         'Audio downloaded successfully.',
 
-                    outputDir
+                    outputDir,
+
+                    filePath: foundAudio ? path.join(outputDir, foundAudio) : null
 
                 };
 
@@ -3215,11 +3328,20 @@ ipcMain.handle(
 
         } catch (error) {
 
-            if (error.message === 'DOWNLOAD_CANCELLED' || downloadState.isCancelled) {
+            const taskState = getTaskState(options?.taskId || 'default');
+            if (error.message === 'DOWNLOAD_CANCELLED' || taskState.isCancelled) {
                 return {
                     success: false,
                     cancelled: true,
                     message: 'Download cancelled by user.'
+                };
+            }
+
+            if (error.message === 'DOWNLOAD_PAUSED' || taskState.isPaused) {
+                return {
+                    success: false,
+                    paused: true,
+                    message: 'Download paused by user.'
                 };
             }
 

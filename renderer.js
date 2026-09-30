@@ -289,7 +289,16 @@ function resetDownloadProgress() {
 // ========================================
 
 window.electronAPI.onDownloadProgress(
-    (text) => {
+    (payload) => {
+
+        let taskId = null;
+        let text = '';
+        if (payload && typeof payload === 'object') {
+            taskId = payload.taskId;
+            text = payload.text;
+        } else {
+            text = String(payload || '');
+        }
 
         if (!text) {
             return;
@@ -345,6 +354,10 @@ window.electronAPI.onDownloadProgress(
                 ? sizeMatch[1]
                 : null;
 
+
+        if (window.queueManager) {
+            window.queueManager.onProgress(taskId, { text, percent, speed, eta, totalSize });
+        }
 
         if (
             percent === null &&
@@ -456,6 +469,61 @@ window.electronAPI.onDownloadProgress(
         let currentType =
             "video";
 
+        // ========================================
+        // Advanced Media Options Helpers
+        // ========================================
+
+        function initAdvancedOptions() {
+            const toggle = document.getElementById("advancedOptionsToggle");
+            const content = document.getElementById("advancedOptionsContent");
+
+            if (toggle && content) {
+                toggle.addEventListener("click", () => {
+                    const isHidden = content.classList.toggle("hidden");
+                    toggle.classList.toggle("collapsed", isHidden);
+                    localStorage.setItem("optSectionCollapsed", isHidden ? "true" : "false");
+                });
+
+                const savedCollapsed = localStorage.getItem("optSectionCollapsed");
+                if (savedCollapsed === "true") {
+                    content.classList.add("hidden");
+                    toggle.classList.add("collapsed");
+                }
+            }
+
+            const optIds = ["optEmbedThumbnail", "optEmbedMetadata", "optSponsorBlock", "optEmbedSubs"];
+            optIds.forEach((id) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    const saved = localStorage.getItem(id);
+                    if (saved !== null) {
+                        el.checked = (saved === "true");
+                    }
+                    el.addEventListener("change", () => {
+                        localStorage.setItem(id, el.checked ? "true" : "false");
+                    });
+                }
+            });
+        }
+
+        function updateAdvancedOptionsVisibility() {
+            const section = document.querySelector(".advanced-options-section");
+            const subsContainer = document.getElementById("optEmbedSubsContainer");
+            if (!section) return;
+
+            if (currentType === "subtitle") {
+                section.classList.add("hidden");
+            } else {
+                section.classList.remove("hidden");
+                if (subsContainer) {
+                    subsContainer.style.display = (currentType === "audio") ? "none" : "flex";
+                }
+            }
+        }
+
+        initAdvancedOptions();
+        updateAdvancedOptionsVisibility();
+
 
         // ========================================
         // Download type selection
@@ -519,6 +587,8 @@ window.electronAPI.onDownloadProgress(
     );
 
 }
+
+                        updateAdvancedOptionsVisibility();
 
                     }
                 );
@@ -2088,628 +2158,130 @@ document
             document.getElementById("browseButton").click();
         }
     );
-        // ========================================
-        // Download button
-        // ========================================
+        // ====================================================================
+        // Download Queue Integration: Build Tasks & Listeners
+        // ====================================================================
 
-        document
-    .getElementById(
-        "downloadButton"
-    )
-    .addEventListener(
-        "click",
-        async () => {
-
-            // ========================================
-            // Subtitle download
-            // ========================================
-
-            if (currentType === "subtitle") {
-
-                const language =
-                    qualitySelect.value;
-
-                // No subtitle language selected
-                if (!language) {
-
-                    alert(
-                        "Please select a subtitle language."
-                    );
-
-                    return;
-
-                }
-
-                if (!currentData) {
-
-                    alert(
-                        "Please analyze a YouTube URL first."
-                    );
-
-                    return;
-
-                }
-
-                const outputDir =
-                    document
-                        .getElementById(
-                            "locationInput"
-                        )
-                        .value
-                        .trim();
-
-                if (!outputDir) {
-                    alert(
-                        "Please select a download folder first."
-                    );
-                    return;
-                }
-
-                try {
-
-                    status.classList.remove(
-                        "hidden"
-                    );
-
-                    statusText.textContent =
-                        "Downloading subtitles...";
-
-
-                    let playlistEntries =
-                        Array.isArray(
-                            currentData.playlistEntries
-                        )
-                            ? currentData.playlistEntries
-                            : [];
-
-                    let selectedEntries = [];
-
-                    if (
-                        playlistEntries.length > 0
-                    ) {
-
-                        const selectedCheckboxes =
-                            Array.from(
-                                document.querySelectorAll(
-                                    ".playlist-checkbox:checked"
-                                )
-                            );
-
-                        selectedEntries =
-                            selectedCheckboxes
-                                .map(
-                                    (checkbox) => {
-
-                                        const index =
-                                            Number(
-                                                checkbox.dataset.index
-                                            );
-
-                                        return (
-                                            playlistEntries[index] ||
-                                            null
-                                        );
-
-                                    }
-                                )
-                                .filter(
-                                    (entry) => {
-
-                                        return (
-                                            entry &&
-                                            typeof entry.webpageUrl ===
-                                                "string" &&
-                                            entry.webpageUrl.trim()
-                                        );
-
-                                    }
-                                );
-
-                        if (
-                            selectedEntries.length === 0
-                        ) {
-
-                            status.classList.add(
-                                "hidden"
-                            );
-
-                            alert(
-                                "Please select at least one video from the playlist."
-                            );
-
-                            return;
-
-                        }
-
-                    }
-
-
-                    // Check existing subtitle files
-                    let subCollisionAction = 'overwrite';
-                    try {
-                        const checkResult = await window.electronAPI.checkExistingFiles({
-                            outputDir,
-                            items: [{ title: currentData.title }],
-                            type: 'subtitle',
-                            language
-                        });
-
-                        if (checkResult && checkResult.hasConflict) {
-                            subCollisionAction = await showConflictPrompt({
-                                isPlaylist: false,
-                                conflicts: checkResult.conflicts,
-                                totalCount: 1
-                            });
-
-                            if (subCollisionAction === 'cancel') {
-                                status.classList.add("hidden");
-                                return;
-                            }
-                        }
-                    } catch (checkErr) {
-                        console.warn('Conflict check error (subtitles):', checkErr);
-                    }
-
-                    const response =
-    await window
-        .electronAPI
-        .downloadSubtitles({
-
-            url:
-                currentData.webpageUrl,
-
-            language,
-
-            outputDir,
-
-            collisionAction: subCollisionAction,
-
-            playlistEntries:
-                selectedEntries,
-
-            playlistTitle:
-                currentData.title ||
-                "Playlist"
-
-        });
-
-
-                    status.classList.add(
-                        "hidden"
-                    );
-
-
-                    if (response.success) {
-
-                        alert(
-                            "Subtitle downloaded successfully."
-                        );
-
-                    } else {
-
-                        alert(
-                            "Error: " +
-                            (
-                                response.message ||
-                                "Subtitle download failed."
-                            )
-                        );
-
-                    }
-
-                }
-                catch (error) {
-
-                    status.classList.add(
-                        "hidden"
-                    );
-
-                    console.error(
-                        "Subtitle download error:",
-                        error
-                    );
-
-                    alert(
-                        "Error: " +
-                        error.message
-                    );
-
-                }
-
-                return;
+        function buildTasksFromCurrentForm() {
+            if (!currentData) {
+                showModalAlert("Please analyze a YouTube URL first.");
+                return null;
             }
 
-
-            // ========================================
-            // Video / Audio
-            // ========================================
-        if (!currentData) {
-
-            alert(
-                "Please analyze a YouTube URL first."
-            );
-
-            return;
-
-        }
-
-
-        const selectedQuality =
-            qualitySelect.value;
-
-
-        if (!selectedQuality) {
-
-            alert(
-                currentType === "audio"
-                    ? "Please select an audio quality."
-                    : "Please select a video quality."
-            );
-
-            return;
-
-        }
-
-        const outputDir =
-            document
-                .getElementById(
-                    "locationInput"
-                )
-                .value
-                .trim();
-
-        if (!outputDir) {
-            alert(
-                "Please select a download folder first."
-            );
-            return;
-        }
-
-        try {
-
-            status.classList.remove(
-                "hidden"
-            );
-
-
-            resetDownloadProgress();
-
-            downloadProgress.classList.remove(
-                "hidden"
-            );
-
-            isDownloadCancelledLocally = false;
-            resetDownloadControlsUI();
-            if (downloadControlsEl) downloadControlsEl.classList.remove("hidden");
-
-
-            // ========================================
-            // Get selected Playlist entries
-            // ========================================
-
-            const playlistEntries =
-                Array.isArray(
-                    currentData.playlistEntries
-                )
-                    ? currentData.playlistEntries
-                    : [];
-
-
-            let downloadEntries =
-                [];
-
-
-            if (
-                playlistEntries.length > 0
-            ) {
-
-                const selectedCheckboxes =
-                    Array.from(
-                        document.querySelectorAll(
-                            ".playlist-checkbox:checked"
-                        )
-                    );
-
-
-                downloadEntries =
-                    selectedCheckboxes
-                        .map(
-                            (checkbox) => {
-
-                                const index =
-                                    Number(
-                                        checkbox.dataset.index
-                                    );
-
-
-                                return (
-                                    playlistEntries[index] ||
-                                    null
-                                );
-
-                            }
-                        )
-                        .filter(
-                            (entry) => {
-
-                                return (
-                                    entry &&
-                                    typeof entry.webpageUrl ===
-                                        "string" &&
-                                    entry.webpageUrl.trim()
-                                );
-
-                            }
-                        );
-
-            }
-
-
-            // ========================================
-            // Single video / audio
-            // ========================================
-
-            if (
-                playlistEntries.length === 0
-            ) {
-
-                downloadEntries = [
-
-                    {
-
-                        title:
-                            currentData.title ||
-                            "Video",
-
-                        webpageUrl:
-                            currentData.webpageUrl
-
-                    }
-
-                ];
-
-            }
-
-
-            if (
-                downloadEntries.length === 0
-            ) {
-
-                throw new Error(
-                    "Please select at least one video from the playlist."
+            const selectedQuality = qualitySelect.value;
+            if (!selectedQuality) {
+                showModalAlert(
+                    currentType === "subtitle"
+                        ? "Please select a subtitle language."
+                        : currentType === "audio"
+                        ? "Please select an audio quality."
+                        : "Please select a video quality."
                 );
-
+                return null;
             }
 
-
-            // ========================================
-            // Check for existing files
-            // ========================================
-            let mediaCollisionAction = 'overwrite';
-            const conflictTitlesSet = new Set();
-
-            try {
-                const conflictCheck = await window.electronAPI.checkExistingFiles({
-                    outputDir,
-                    items: downloadEntries.map(e => ({ title: e.title })),
-                    type: currentType,
-                    audioFormat: selectedQuality
-                });
-
-                if (conflictCheck && conflictCheck.hasConflict && conflictCheck.conflicts.length > 0) {
-                    conflictCheck.conflicts.forEach(c => conflictTitlesSet.add(c.title));
-
-                    mediaCollisionAction = await showConflictPrompt({
-                        isPlaylist: downloadEntries.length > 1,
-                        conflicts: conflictCheck.conflicts,
-                        totalCount: downloadEntries.length
-                    });
-
-                    if (mediaCollisionAction === 'cancel') {
-                        status.classList.add("hidden");
-                        downloadProgress.classList.add("hidden");
-                        return;
-                    }
-                }
-            } catch (conflictErr) {
-                console.warn('Conflict check error:', conflictErr);
+            const outputDir = document.getElementById("locationInput").value.trim();
+            if (!outputDir) {
+                showModalAlert("Please select a download folder first.");
+                return null;
             }
 
-            const totalDownloads =
-                downloadEntries.length;
+            const playlistEntries = Array.isArray(currentData.playlistEntries) ? currentData.playlistEntries : [];
+            let entries = [];
 
-
-            const failedDownloads =
-                [];
-
-            let skippedCount = 0;
-
-            // ========================================
-            // Download selected entries one by one
-            // ========================================
-
-            for (
-                let i = 0;
-                i < totalDownloads;
-                i++
-            ) {
-
-                if (isDownloadCancelledLocally) {
-                    break;
-                }
-
-                const entry =
-                    downloadEntries[i];
-
-
-                const title =
-                    entry.title ||
-                    `Video ${i + 1}`;
-
-                // Skip if user chose skip and entry already exists
-                if (mediaCollisionAction === 'skip' && conflictTitlesSet.has(entry.title)) {
-                    skippedCount++;
-                    continue;
-                }
-
-                statusText.textContent =
-                    totalDownloads > 1
-                        ? `Downloading ${i + 1} of ${totalDownloads}...`
-                        : (
-                            currentType === "audio"
-                                ? "Downloading audio..."
-                                : "Downloading video..."
-                        );
-
-
-                resetDownloadProgress();
-
-
-                try {
-
-                    const response =
-                        await window
-                            .electronAPI
-                            .downloadMedia({
-
-                                url:
-                                    entry.webpageUrl,
-
-                                type:
-                                    currentType,
-
-                                quality:
-                                    selectedQuality,
-
-                                outputDir,
-
-                                collisionAction:
-                                    mediaCollisionAction,
-
-                                title:
-                                    entry.title
-
-                            });
-
-
-                    if (response && response.cancelled) {
-                        isDownloadCancelledLocally = true;
-                        break;
-                    }
-
-                    if (
-                        !response ||
-                        !response.success
-                    ) {
-
-                        failedDownloads.push(
-                            title
-                        );
-
-                    }
-
-                }
-                catch (
-                    error
-                ) {
-
-                    console.error(
-                        `Download failed: ${title}`,
-                        error
-                    );
-
-
-                    failedDownloads.push(
-                        title
-                    );
-
-                }
-
+            if (playlistEntries.length > 0) {
+                const checkedBoxes = Array.from(document.querySelectorAll(".playlist-checkbox:checked"));
+                if (checkedBoxes.length === 0) {
+                showModalAlert("Please select at least one video from the playlist.");
+                return null;
             }
-
-
-            // ========================================
-            // Download finished
-            // ========================================
-
-            resetDownloadProgress();
-
-            if (downloadControlsEl) downloadControlsEl.classList.add("hidden");
-            resetDownloadControlsUI();
-
-            status.classList.add(
-                "hidden"
-            );
-
-            if (isDownloadCancelledLocally) {
-                return;
-            }
-
-
-            if (
-                failedDownloads.length === 0
-            ) {
-                const downloadedCount = totalDownloads - skippedCount;
-                let successMsg = "";
-                if (skippedCount > 0) {
-                    successMsg = `${downloadedCount} downloaded, ${skippedCount} skipped (already existed).`;
-                } else {
-                    successMsg = totalDownloads > 1
-                        ? `All ${totalDownloads} selected videos downloaded successfully.`
-                        : (
-                            currentType === "audio"
-                                ? "Audio downloaded successfully."
-                                : "Video downloaded successfully."
-                        );
-                }
-                alert(successMsg);
-
+                entries = checkedBoxes.map(cb => playlistEntries[Number(cb.dataset.index)]).filter(Boolean);
             } else {
-
-                const successCount =
-                    totalDownloads -
-                    failedDownloads.length;
-
-
-                alert(
-                    `${successCount} of ${totalDownloads} downloads completed.\n\n` +
-                    `Failed:\n` +
-                    failedDownloads.join(
-                        "\n"
-                    )
-                );
-
+                entries = [{
+                    title: currentData.title || "Video",
+                    webpageUrl: currentData.webpageUrl || currentData.url,
+                    thumbnail: currentData.thumbnail || '',
+                    duration: currentData.duration || ''
+                }];
             }
 
+            const embedThumbnail = document.getElementById("optEmbedThumbnail")?.checked ?? true;
+            const embedMetadata = document.getElementById("optEmbedMetadata")?.checked ?? true;
+            const sponsorBlock = document.getElementById("optSponsorBlock")?.checked ?? false;
+            const embedSubs = document.getElementById("optEmbedSubs")?.checked ?? false;
+
+            let qualityLabel = selectedQuality;
+            if (currentType === 'video') {
+                qualityLabel = `${selectedQuality}p MP4`;
+            } else if (currentType === 'audio') {
+                qualityLabel = `${selectedQuality.toUpperCase()}`;
+            } else if (currentType === 'subtitle') {
+                qualityLabel = `Sub: ${selectedQuality.toUpperCase()}`;
+            }
+
+            return entries.map((entry, idx) => ({
+                id: 'task_' + Date.now() + '_' + idx + '_' + Math.random().toString(36).substr(2, 6),
+                title: entry.title || `Item ${idx + 1}`,
+                url: entry.webpageUrl || entry.url || currentData.webpageUrl,
+                type: currentType,
+                quality: selectedQuality,
+                qualityLabel,
+                outputDir,
+                thumbnail: entry.thumbnail || currentData.thumbnail || '',
+                duration: entry.duration || currentData.duration || '',
+                options: {
+                    collisionAction: 'overwrite',
+                    embedThumbnail,
+                    embedMetadata,
+                    sponsorBlock,
+                    embedSubs
+                },
+                status: 'pending',
+                progressPercent: 0,
+                speed: '',
+                eta: '',
+                totalSize: '',
+                filePath: null,
+                error: null,
+                createdAt: Date.now()
+            }));
         }
-        catch (
-            error
-        ) {
 
-            status.classList.add(
-                "hidden"
-            );
-
-
-            resetDownloadProgress();
-
-
-            console.error(
-                "Download error:",
-                error
-            );
-
-
-            alert(
-                "Error: " +
-                error.message
-            );
-
+        const downloadButtonEl = document.getElementById("downloadButton");
+        if (downloadButtonEl) {
+            downloadButtonEl.addEventListener("click", () => {
+                const tasks = buildTasksFromCurrentForm();
+                if (!tasks || tasks.length === 0) return;
+                if (window.queueManager) {
+                    window.queueManager.addTasks(tasks, true);
+                }
+                const navQueue = document.getElementById("navQueue");
+                if (navQueue) navQueue.click();
+                showToast(
+                    tasks.length > 1
+                        ? `Started downloading ${tasks.length} items`
+                        : `Started downloading: ${tasks[0].title}`,
+                    '🚀'
+                );
+            });
         }
 
+        const addToQueueButtonEl = document.getElementById("addToQueueButton");
+        if (addToQueueButtonEl) {
+            addToQueueButtonEl.addEventListener("click", () => {
+                const tasks = buildTasksFromCurrentForm();
+                if (!tasks || tasks.length === 0) return;
+                if (window.queueManager) {
+                    window.queueManager.addTasks(tasks, true);
+                }
+                showToast(
+                    tasks.length > 1
+                        ? `Added ${tasks.length} items to Queue`
+                        : `Added to Queue: ${tasks[0].title}`,
+                    '➕'
+                );
+            });
         }
-
-    );
 
 
         // ========================================
@@ -2952,3 +2524,624 @@ document
 
             }
         );
+
+
+// ============================================================================
+// Toast Notification System
+// ============================================================================
+function showToast(message, icon = '✅', duration = 3200) {
+    const toast = document.getElementById('toastNotification');
+    const toastMsg = document.getElementById('toastMessage');
+    const toastIcon = document.getElementById('toastIcon');
+    if (!toast || !toastMsg) return;
+    toastMsg.textContent = message;
+    if (toastIcon) toastIcon.textContent = icon;
+    toast.classList.remove('hidden');
+    clearTimeout(toast._timer);
+    toast._timer = setTimeout(() => {
+        toast.classList.add('hidden');
+    }, duration);
+}
+
+// ============================================================================
+// Navigation Tabs (New Download vs Download Queue)
+// ============================================================================
+function setupNavigation() {
+    const navNew = document.getElementById('navNewDownload');
+    const navQueue = document.getElementById('navQueue');
+    const viewNew = document.getElementById('newDownloadView');
+    const viewQueue = document.getElementById('queueView');
+
+    if (!navNew || !navQueue || !viewNew || !viewQueue) return;
+
+    navNew.addEventListener('click', () => {
+        navNew.classList.add('active');
+        navQueue.classList.remove('active');
+        viewNew.classList.remove('hidden');
+        viewQueue.classList.add('hidden');
+    });
+
+    navQueue.addEventListener('click', () => {
+        navQueue.classList.add('active');
+        navNew.classList.remove('active');
+        viewQueue.classList.remove('hidden');
+        viewNew.classList.add('hidden');
+        if (window.queueManager) {
+            window.queueManager.render();
+        }
+    });
+}
+
+// ============================================================================
+// Download Queue Manager
+// ============================================================================
+class QueueManager {
+    constructor() {
+        this.tasks = [];
+        this.maxConcurrent = 1;
+        this.activeFilter = 'all';
+        this.isProcessing = false;
+        this.init();
+    }
+
+    init() {
+        this.loadQueue();
+        this.setupControls();
+        this.setupFilters();
+        this.setupQueueDelegation();
+        this.render();
+        this.updateBadge();
+        this.updateStats();
+    }
+
+    saveQueue() {
+        try {
+            const serialized = this.tasks.map(t => ({
+                id: t.id,
+                title: t.title,
+                url: t.url,
+                type: t.type,
+                quality: t.quality,
+                qualityLabel: t.qualityLabel,
+                outputDir: t.outputDir,
+                thumbnail: t.thumbnail,
+                duration: t.duration,
+                options: t.options,
+                status: t.status === 'downloading' ? 'pending' : t.status,
+                progressPercent: t.status === 'completed' ? 100 : (t.progressPercent || 0),
+                speed: '',
+                eta: '',
+                totalSize: t.totalSize || '',
+                filePath: t.filePath || null,
+                error: t.error || null,
+                createdAt: t.createdAt || Date.now()
+            }));
+            localStorage.setItem('yt_download_queue', JSON.stringify(serialized));
+        } catch (e) {
+            console.error('Failed to save queue', e);
+        }
+    }
+
+    loadQueue() {
+        try {
+            const raw = localStorage.getItem('yt_download_queue');
+            if (raw) {
+                const parsed = JSON.parse(raw);
+                if (Array.isArray(parsed)) {
+                    this.tasks = parsed;
+                }
+            }
+        } catch (e) {
+            console.error('Failed to load queue', e);
+        }
+    }
+
+    setupControls() {
+        const select = document.getElementById('maxConcurrentSelect');
+        if (select) {
+            const saved = localStorage.getItem('yt_queue_concurrent');
+            if (saved) {
+                this.maxConcurrent = parseInt(saved, 10) || 1;
+                select.value = String(this.maxConcurrent);
+            }
+            select.addEventListener('change', (e) => {
+                this.maxConcurrent = parseInt(e.target.value, 10) || 1;
+                localStorage.setItem('yt_queue_concurrent', String(this.maxConcurrent));
+                this.processQueue();
+            });
+        }
+
+        const btnStartAll = document.getElementById('queueStartAllBtn');
+        if (btnStartAll) {
+            btnStartAll.addEventListener('click', () => this.startAll());
+        }
+
+        const btnPauseAll = document.getElementById('queuePauseAllBtn');
+        if (btnPauseAll) {
+            btnPauseAll.addEventListener('click', () => this.pauseAll());
+        }
+
+        const btnClear = document.getElementById('queueClearCompletedBtn');
+        if (btnClear) {
+            btnClear.addEventListener('click', () => this.clearFinished());
+        }
+    }
+
+    setupFilters() {
+        const tabs = document.querySelectorAll('.queue-filter-tab');
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                tabs.forEach(t => t.classList.remove('active'));
+                tab.classList.add('active');
+                this.activeFilter = tab.dataset.filter || 'all';
+                this.render();
+            });
+        });
+    }
+
+    setupQueueDelegation() {
+        const list = document.getElementById('queueList');
+        if (!list) return;
+
+        list.addEventListener('click', (e) => {
+            const btn = e.target.closest('[data-action]');
+            if (!btn) return;
+            const action = btn.dataset.action;
+            const taskId = btn.dataset.id;
+            const filePath = btn.dataset.path;
+
+            if (action === 'pause') {
+                this.pauseTask(taskId);
+            } else if (action === 'resume') {
+                this.resumeTask(taskId);
+            } else if (action === 'cancel') {
+                this.cancelTask(taskId);
+            } else if (action === 'retry') {
+                this.retryTask(taskId);
+            } else if (action === 'remove') {
+                this.removeTask(taskId);
+            } else if (action === 'start') {
+                this.startTask(taskId);
+            } else if (action === 'open-file') {
+                if (filePath) {
+                    window.electronAPI.openFile(filePath).then(res => {
+                        if (!res || !res.success) {
+                            showToast('Could not open file (file might have been moved)', '⚠️');
+                        }
+                    });
+                }
+            } else if (action === 'show-folder') {
+                const target = filePath || (taskId && this.tasks.find(t => t.id === taskId)?.outputDir);
+                if (target) {
+                    window.electronAPI.showInFolder(target);
+                }
+            }
+        });
+    }
+
+    addTasks(newTasks, autoStart = true) {
+        for (const t of newTasks) {
+            this.tasks.push(t);
+        }
+        this.saveQueue();
+        this.updateBadge();
+        this.updateStats();
+        this.render();
+
+        if (autoStart) {
+            this.processQueue();
+        }
+    }
+
+    async processQueue() {
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
+        try {
+            const downloading = this.tasks.filter(t => t.status === 'downloading');
+            const availableSlots = this.maxConcurrent - downloading.length;
+
+            if (availableSlots > 0) {
+                const pending = this.tasks.filter(t => t.status === 'pending');
+                const toRun = pending.slice(0, availableSlots);
+                for (const task of toRun) {
+                    this.executeTask(task);
+                }
+            }
+        } finally {
+            this.isProcessing = false;
+            this.updateBadge();
+            this.updateStats();
+        }
+    }
+
+    async executeTask(task) {
+        task.status = 'downloading';
+        task.error = null;
+        this.updateTaskUI(task);
+        this.updateStats();
+        this.saveQueue();
+
+        try {
+            if (task.type === 'subtitle') {
+                const res = await window.electronAPI.downloadSubtitles({
+                    url: task.url,
+                    language: task.quality,
+                    outputDir: task.outputDir,
+                    taskId: task.id
+                });
+                if (res && res.success) {
+                    task.status = 'completed';
+                    task.progressPercent = 100;
+                    task.filePath = res.file ? `${task.outputDir}/${res.file}` : null;
+                    showToast(`Subtitles saved: ${task.title}`, '✅');
+                } else if (res && res.cancelled) {
+                    task.status = 'cancelled';
+                } else {
+                    task.status = 'failed';
+                    task.error = res ? res.message : 'Subtitle download failed.';
+                }
+            } else {
+                const res = await window.electronAPI.downloadMedia({
+                    url: task.url,
+                    type: task.type,
+                    quality: task.quality,
+                    outputDir: task.outputDir,
+                    title: task.title,
+                    collisionAction: task.options?.collisionAction || 'overwrite',
+                    embedThumbnail: task.options?.embedThumbnail ?? true,
+                    embedMetadata: task.options?.embedMetadata ?? true,
+                    sponsorBlock: task.options?.sponsorBlock ?? false,
+                    embedSubs: task.options?.embedSubs ?? false,
+                    taskId: task.id
+                });
+
+                if (res && res.success) {
+                    task.status = 'completed';
+                    task.progressPercent = 100;
+                    task.filePath = res.filePath || null;
+                    showToast(`Downloaded: ${task.title}`, '🎉');
+                } else if (res && res.cancelled) {
+                    task.status = 'cancelled';
+                } else if (res && res.paused) {
+                    task.status = 'paused';
+                } else if (task.status === 'paused') {
+                    // remaining paused
+                } else {
+                    task.status = 'failed';
+                    task.error = res ? res.message : 'Download failed.';
+                }
+            }
+        } catch (err) {
+            if (task.status === 'paused' || err.message === 'DOWNLOAD_PAUSED') {
+                task.status = 'paused';
+            } else if (err.message === 'DOWNLOAD_CANCELLED') {
+                task.status = 'cancelled';
+            } else {
+                task.status = 'failed';
+                task.error = err.message || 'Error occurred';
+            }
+        } finally {
+            this.updateTaskUI(task);
+            this.saveQueue();
+            this.processQueue();
+        }
+    }
+
+    onProgress(taskId, metrics) {
+        if (!taskId) return;
+        const task = this.tasks.find(t => t.id === taskId);
+        if (!task) return;
+
+        if (metrics.percent !== null) {
+            task.progressPercent = Math.max(task.progressPercent || 0, metrics.percent);
+        }
+        if (metrics.speed) task.speed = metrics.speed;
+        if (metrics.eta) task.eta = metrics.eta;
+        if (metrics.totalSize) task.totalSize = metrics.totalSize;
+
+        this.updateTaskProgressUI(task);
+    }
+
+    startTask(taskId) {
+        const task = this.tasks.find(t => t.id === taskId);
+        if (!task) return;
+        task.status = 'pending';
+        task.error = null;
+        this.updateTaskUI(task);
+        this.saveQueue();
+        this.processQueue();
+    }
+
+    pauseTask(taskId) {
+        const task = this.tasks.find(t => t.id === taskId);
+        if (!task) return;
+        task.status = 'paused';
+        window.electronAPI.pauseDownload(taskId);
+        this.updateTaskUI(task);
+        this.saveQueue();
+    }
+
+    resumeTask(taskId) {
+        const task = this.tasks.find(t => t.id === taskId);
+        if (!task) return;
+        task.status = 'pending';
+        task.error = null;
+        this.updateTaskUI(task);
+        this.saveQueue();
+        this.processQueue();
+    }
+
+    cancelTask(taskId) {
+        const task = this.tasks.find(t => t.id === taskId);
+        if (!task) return;
+        window.electronAPI.cancelDownload(taskId);
+        task.status = 'cancelled';
+        this.updateTaskUI(task);
+        this.saveQueue();
+        this.processQueue();
+    }
+
+    retryTask(taskId) {
+        const task = this.tasks.find(t => t.id === taskId);
+        if (!task) return;
+        task.status = 'pending';
+        task.error = null;
+        task.progressPercent = 0;
+        task.speed = '';
+        task.eta = '';
+        this.updateTaskUI(task);
+        this.saveQueue();
+        this.processQueue();
+    }
+
+    removeTask(taskId) {
+        const task = this.tasks.find(t => t.id === taskId);
+        if (task && (task.status === 'downloading' || task.status === 'paused')) {
+            window.electronAPI.cancelDownload(taskId);
+        }
+        this.tasks = this.tasks.filter(t => t.id !== taskId);
+        this.saveQueue();
+        this.render();
+        this.updateBadge();
+        this.updateStats();
+        this.processQueue();
+    }
+
+    startAll() {
+        let count = 0;
+        for (const task of this.tasks) {
+            if (['pending', 'paused', 'failed', 'cancelled'].includes(task.status)) {
+                task.status = 'pending';
+                task.error = null;
+                count++;
+            }
+        }
+        if (count > 0) showToast(`Started ${count} downloads`, '▶');
+        this.render();
+        this.saveQueue();
+        this.processQueue();
+    }
+
+    pauseAll() {
+        window.electronAPI.pauseDownload('all');
+        let count = 0;
+        for (const task of this.tasks) {
+            if (task.status === 'downloading') {
+                task.status = 'paused';
+                count++;
+            }
+        }
+        if (count > 0) showToast(`Paused ${count} downloads`, '⏸');
+        this.render();
+        this.saveQueue();
+    }
+
+    clearFinished() {
+        const before = this.tasks.length;
+        this.tasks = this.tasks.filter(t => t.status === 'downloading' || t.status === 'pending' || t.status === 'paused');
+        const removed = before - this.tasks.length;
+        if (removed > 0) showToast(`Cleared ${removed} finished tasks`, '🗑');
+        this.saveQueue();
+        this.render();
+        this.updateBadge();
+        this.updateStats();
+    }
+
+    updateBadge() {
+        const badge = document.getElementById('queueBadge');
+        if (!badge) return;
+        const activeOrPending = this.tasks.filter(t => t.status === 'downloading' || t.status === 'pending');
+        if (activeOrPending.length > 0) {
+            badge.textContent = String(activeOrPending.length);
+            badge.classList.remove('hidden');
+        } else {
+            badge.classList.add('hidden');
+        }
+    }
+
+    updateStats() {
+        const stats = document.getElementById('queueStats');
+        if (stats) {
+            const active = this.tasks.filter(t => t.status === 'downloading').length;
+            const pending = this.tasks.filter(t => t.status === 'pending').length;
+            stats.textContent = `${this.tasks.length} total • ${active} active • ${pending} pending`;
+        }
+
+        const countAll = document.getElementById('filterCountAll');
+        const countActive = document.getElementById('filterCountActive');
+        const countPending = document.getElementById('filterCountPending');
+        const countCompleted = document.getElementById('filterCountCompleted');
+        const countFailed = document.getElementById('filterCountFailed');
+
+        if (countAll) countAll.textContent = this.tasks.length;
+        if (countActive) countActive.textContent = this.tasks.filter(t => t.status === 'downloading').length;
+        if (countPending) countPending.textContent = this.tasks.filter(t => t.status === 'pending').length;
+        if (countCompleted) countCompleted.textContent = this.tasks.filter(t => t.status === 'completed').length;
+        if (countFailed) countFailed.textContent = this.tasks.filter(t => t.status === 'failed' || t.status === 'cancelled').length;
+    }
+
+    getFilteredTasks() {
+        if (this.activeFilter === 'active') {
+            return this.tasks.filter(t => t.status === 'downloading' || t.status === 'paused');
+        } else if (this.activeFilter === 'pending') {
+            return this.tasks.filter(t => t.status === 'pending');
+        } else if (this.activeFilter === 'completed') {
+            return this.tasks.filter(t => t.status === 'completed');
+        } else if (this.activeFilter === 'failed') {
+            return this.tasks.filter(t => t.status === 'failed' || t.status === 'cancelled');
+        }
+        return this.tasks;
+    }
+
+    render() {
+        const list = document.getElementById('queueList');
+        if (!list) return;
+
+        const filtered = this.getFilteredTasks();
+
+        if (filtered.length === 0) {
+            list.innerHTML = `
+                <div class="queue-empty-state">
+                    <div class="queue-empty-icon">📥</div>
+                    <h3>No downloads in this view</h3>
+                    <p>Add YouTube videos or playlists to your queue to download them here.</p>
+                </div>
+            `;
+            this.updateStats();
+            return;
+        }
+
+        list.innerHTML = filtered.map(task => this.renderTaskCard(task)).join('');
+        this.updateStats();
+    }
+
+    renderTaskCard(task) {
+        const pct = task.progressPercent || 0;
+        const statusMap = {
+            'pending': { text: '⏳ Pending', class: 'status-chip-pending' },
+            'downloading': { text: '⚡ Downloading', class: 'status-chip-downloading' },
+            'paused': { text: '⏸ Paused', class: 'status-chip-paused' },
+            'completed': { text: '✅ Completed', class: 'status-chip-completed' },
+            'failed': { text: '❌ Failed', class: 'status-chip-failed' },
+            'cancelled': { text: '⏹ Cancelled', class: 'status-chip-cancelled' }
+        };
+
+        const statusInfo = statusMap[task.status] || { text: task.status, class: 'status-chip-pending' };
+
+        let actionBtns = '';
+        if (task.status === 'downloading') {
+            actionBtns = `
+                <button class="queue-btn-icon" data-action="pause" data-id="${task.id}" title="Pause download">⏸</button>
+                <button class="queue-btn-icon danger" data-action="cancel" data-id="${task.id}" title="Cancel download">⏹</button>
+            `;
+        } else if (task.status === 'paused') {
+            actionBtns = `
+                <button class="queue-btn-icon success" data-action="resume" data-id="${task.id}" title="Resume download">▶</button>
+                <button class="queue-btn-icon danger" data-action="cancel" data-id="${task.id}" title="Cancel download">⏹</button>
+            `;
+        } else if (task.status === 'pending') {
+            actionBtns = `
+                <button class="queue-btn-icon success" data-action="start" data-id="${task.id}" title="Start now">▶</button>
+                <button class="queue-btn-icon danger" data-action="remove" data-id="${task.id}" title="Remove from queue">🗑</button>
+            `;
+        } else if (task.status === 'completed') {
+            actionBtns = `
+                ${task.filePath ? `<button class="queue-btn-icon success" data-action="open-file" data-path="${task.filePath.replace(/"/g, '&quot;')}" title="Play / Open file">▶</button>` : ''}
+                <button class="queue-btn-icon" data-action="show-folder" data-path="${(task.filePath || task.outputDir || '').replace(/"/g, '&quot;')}" data-id="${task.id}" title="Show in folder">📁</button>
+                <button class="queue-btn-icon danger" data-action="remove" data-id="${task.id}" title="Remove from queue">🗑</button>
+            `;
+        } else {
+            actionBtns = `
+                <button class="queue-btn-icon success" data-action="retry" data-id="${task.id}" title="Retry download">🔄</button>
+                <button class="queue-btn-icon danger" data-action="remove" data-id="${task.id}" title="Remove from queue">🗑</button>
+            `;
+        }
+
+        const thumbHtml = task.thumbnail
+            ? `<img class="queue-item-thumb" src="${task.thumbnail}" alt="" onerror="this.style.display='none';this.nextElementSibling.style.display='block';"><div class="queue-item-thumb-placeholder" style="display:none;">🎬</div>`
+            : `<div class="queue-item-thumb-placeholder">${task.type === 'audio' ? '🎵' : task.type === 'subtitle' ? '💬' : '🎬'}</div>`;
+
+        return `
+            <div id="card_${task.id}" class="queue-item status-${task.status}">
+                <div class="queue-item-thumb-box">
+                    ${thumbHtml}
+                </div>
+                <div class="queue-item-info">
+                    <div class="queue-item-top">
+                        <div class="queue-item-title-wrapper">
+                            <span class="queue-item-title" title="${task.title}">${task.title}</span>
+                            <span class="queue-item-badge ${task.type}">${task.qualityLabel || task.quality}</span>
+                        </div>
+                        <span class="queue-status-chip ${statusInfo.class}">${statusInfo.text}</span>
+                    </div>
+
+                    <div class="queue-item-progress-track">
+                        <div id="progress_${task.id}" class="queue-item-progress-fill" style="width: ${pct}%;"></div>
+                    </div>
+
+                    <div class="queue-item-meta">
+                        <span id="percent_${task.id}" class="queue-item-percent">${task.error ? `<span style="color:#f87171;">${task.error}</span>` : (pct > 0 ? pct.toFixed(1) + '%' : (task.status === 'downloading' ? 'Connecting...' : 'Ready'))}</span>
+                        <div class="queue-item-speed-eta">
+                            <span id="speed_${task.id}" class="queue-item-speed">${task.speed || ''}</span>
+                            <span id="eta_${task.id}" class="queue-item-eta">${task.eta ? 'ETA ' + task.eta : ''}</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="queue-item-actions">
+                    ${actionBtns}
+                </div>
+            </div>
+        `;
+    }
+
+    updateTaskUI(task) {
+        const card = document.getElementById('card_' + task.id);
+        if (card) {
+            const temp = document.createElement('div');
+            temp.innerHTML = this.renderTaskCard(task);
+            if (temp.firstElementChild) {
+                card.replaceWith(temp.firstElementChild);
+            }
+        } else {
+            this.render();
+        }
+        this.updateStats();
+        this.updateBadge();
+    }
+
+    updateTaskProgressUI(task) {
+        const bar = document.getElementById('progress_' + task.id);
+        const pctEl = document.getElementById('percent_' + task.id);
+        const speedEl = document.getElementById('speed_' + task.id);
+        const etaEl = document.getElementById('eta_' + task.id);
+
+        if (bar && task.progressPercent !== undefined) {
+            bar.style.width = Math.min(task.progressPercent, 100) + '%';
+        }
+        if (pctEl && task.progressPercent !== undefined) {
+            pctEl.textContent = task.progressPercent.toFixed(1) + '%';
+        }
+        if (speedEl && task.speed) {
+            speedEl.textContent = task.speed;
+        }
+        if (etaEl && task.eta) {
+            etaEl.textContent = 'ETA ' + task.eta;
+        }
+    }
+}
+
+// Initialize on DOM ready
+document.addEventListener("DOMContentLoaded", () => {
+    setupNavigation();
+    if (!window.queueManager) {
+        window.queueManager = new QueueManager();
+    }
+});
+
+if (document.readyState === "complete" || document.readyState === "interactive") {
+    setupNavigation();
+    if (!window.queueManager) {
+        window.queueManager = new QueueManager();
+    }
+}

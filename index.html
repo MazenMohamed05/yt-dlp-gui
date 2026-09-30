@@ -47,6 +47,21 @@
 
         </header>
 
+        <!-- ========================================
+             App Navigation (Tabs)
+        ========================================= -->
+        <nav class="app-nav">
+            <button id="navNewDownload" class="nav-tab active">
+                <span class="nav-icon">📥</span>
+                <span class="nav-label">New Download</span>
+            </button>
+            <button id="navQueue" class="nav-tab">
+                <span class="nav-icon">📋</span>
+                <span class="nav-label">Download Queue</span>
+                <span id="queueBadge" class="nav-badge hidden">0</span>
+            </button>
+        </nav>
+
 
         <!-- ========================================
              Main
@@ -54,6 +69,7 @@
 
         <main class="main">
 
+            <div id="newDownloadView" class="view-panel active">
             <section class="download-card">
 
 
@@ -470,20 +486,100 @@
 
 
                     <!-- ========================================
-                         Download
+                         Advanced Media Options
+                    ========================================= -->
+                    <div class="advanced-options-section">
+                        <div class="advanced-options-header" id="advancedOptionsToggle">
+                            <span class="advanced-options-title">⚙️ Advanced Media Options</span>
+                            <span class="advanced-options-arrow" id="advancedOptionsArrow">▼</span>
+                        </div>
+                        <div class="advanced-options-content" id="advancedOptionsContent">
+                            <label class="option-checkbox-label" title="Embed YouTube thumbnail inside the media file as cover artwork">
+                                <input type="checkbox" id="optEmbedThumbnail" checked>
+                                <span>🖼️ Embed Thumbnail (Cover)</span>
+                            </label>
+                            <label class="option-checkbox-label" title="Embed tags, uploader, channel, and release date into the media file">
+                                <input type="checkbox" id="optEmbedMetadata" checked>
+                                <span>🏷️ Embed Metadata</span>
+                            </label>
+                            <label class="option-checkbox-label" title="Automatically remove sponsored segments, intro, and outro using SponsorBlock">
+                                <input type="checkbox" id="optSponsorBlock">
+                                <span>🚫 Remove Sponsor Ads (SponsorBlock)</span>
+                            </label>
+                            <label class="option-checkbox-label" id="optEmbedSubsContainer" title="Embed subtitles directly into the video container as soft subs">
+                                <input type="checkbox" id="optEmbedSubs">
+                                <span>💬 Embed Subtitles (Video)</span>
+                            </label>
+                        </div>
+                    </div>
+
+
+                    <!-- ========================================
+                         Download Actions
                     ========================================= -->
 
-                    <button id="downloadButton" class="download-button">
-
-                        Download
-
-                    </button>
+                    <div class="download-actions-group">
+                        <button id="downloadButton" class="download-button">
+                            ⬇️ Download Now
+                        </button>
+                        <button id="addToQueueButton" type="button" class="add-queue-button">
+                            ➕ Add to Queue
+                        </button>
+                    </div>
 
 
                 </div>
 
 
             </section>
+            </div>
+
+            <!-- ========================================
+                 Download Queue View
+            ========================================= -->
+            <div id="queueView" class="view-panel hidden">
+                <section class="queue-card">
+                    <div class="queue-header">
+                        <div class="queue-title-area">
+                            <h2>Download Queue</h2>
+                            <span id="queueStats" class="queue-stats">0 tasks</span>
+                        </div>
+                        <div class="queue-header-actions">
+                            <div class="concurrency-control">
+                                <label for="maxConcurrentSelect">Max Active:</label>
+                                <select id="maxConcurrentSelect" class="queue-select">
+                                    <option value="1" selected>1 download</option>
+                                    <option value="2">2 downloads</option>
+                                    <option value="3">3 downloads</option>
+                                </select>
+                            </div>
+                            <button id="queueStartAllBtn" class="queue-btn queue-btn-primary" title="Resume/start all pending and paused tasks">
+                                ▶ Start All
+                            </button>
+                            <button id="queuePauseAllBtn" class="queue-btn queue-btn-secondary" title="Pause all downloading tasks">
+                                ⏸ Pause All
+                            </button>
+                            <button id="queueClearCompletedBtn" class="queue-btn queue-btn-ghost" title="Clear completed, failed, and cancelled downloads">
+                                🗑 Clear Finished
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Filter Bar -->
+                    <div class="queue-filter-bar">
+                        <button class="queue-filter-tab active" data-filter="all">All (<span id="filterCountAll">0</span>)</button>
+                        <button class="queue-filter-tab" data-filter="active">Active (<span id="filterCountActive">0</span>)</button>
+                        <button class="queue-filter-tab" data-filter="pending">Pending (<span id="filterCountPending">0</span>)</button>
+                        <button class="queue-filter-tab" data-filter="completed">Completed (<span id="filterCountCompleted">0</span>)</button>
+                        <button class="queue-filter-tab" data-filter="failed">Failed (<span id="filterCountFailed">0</span>)</button>
+                    </div>
+
+                    <!-- Queue List -->
+                    <div id="queueList" class="queue-list">
+                        <!-- Populated dynamically via QueueManager -->
+                    </div>
+                </section>
+            </div>
 
         </main>
 
@@ -533,6 +629,12 @@
             <div id="conflictModalFileName" class="conflict-file-name hidden"></div>
             <div id="conflictModalActions" class="conflict-actions"></div>
         </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toastNotification" class="toast-notification hidden">
+        <span id="toastIcon" class="toast-icon">✅</span>
+        <span id="toastMessage" class="toast-message"></span>
     </div>
 
     <script src="renderer.js"></script>

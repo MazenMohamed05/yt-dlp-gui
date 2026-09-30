@@ -1575,3 +1575,642 @@ body {
 .paused-spinner {
     animation-play-state: paused !important;
 }
+
+/* ========================================
+   Advanced Media Options Section
+======================================== */
+.advanced-options-section {
+    margin: 16px 0;
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    overflow: hidden;
+    transition: all 0.25s ease;
+}
+
+.advanced-options-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 16px;
+    cursor: pointer;
+    user-select: none;
+    background: rgba(255, 255, 255, 0.05);
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: #e0e0e0;
+    transition: background 0.2s ease;
+}
+
+.advanced-options-header:hover {
+    background: rgba(255, 255, 255, 0.09);
+}
+
+.advanced-options-arrow {
+    font-size: 0.8rem;
+    transition: transform 0.25s ease;
+    color: #aaa;
+}
+
+.advanced-options-header.collapsed .advanced-options-arrow {
+    transform: rotate(-90deg);
+}
+
+.advanced-options-content {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    padding: 14px 16px;
+    transition: max-height 0.3s ease, opacity 0.3s ease;
+}
+
+.advanced-options-content.hidden {
+    display: none;
+}
+
+.option-checkbox-label {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 0.88rem;
+    color: #cccccc;
+    user-select: none;
+}
+
+.option-checkbox-label input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+    accent-color: #ff0033;
+    cursor: pointer;
+}
+
+.option-checkbox-label:hover span {
+    color: #ffffff;
+}
+
+
+/* ==========================================================================
+   APP NAVIGATION TABS
+   ========================================================================== */
+.app-nav {
+    display: flex;
+    gap: 8px;
+    padding: 12px 36px 0;
+    background: #181a20;
+    border-bottom: 1px solid #292c34;
+}
+
+.nav-tab {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: #8f949e;
+    font-size: 14px;
+    font-weight: 600;
+    padding: 10px 20px;
+    border-radius: 8px 8px 0 0;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border-top: 2px solid transparent;
+}
+
+.nav-tab:hover {
+    color: #f0f0f0;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.nav-tab.active {
+    color: #ffffff;
+    background: #111318;
+    border-top: 2px solid #ff0033;
+}
+
+.nav-icon {
+    font-size: 16px;
+}
+
+.nav-badge {
+    background: #ff0033;
+    color: #ffffff;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 12px;
+    line-height: 1;
+}
+
+.nav-badge.hidden {
+    display: none !important;
+}
+
+/* ==========================================================================
+   VIEW PANELS
+   ========================================================================== */
+.view-panel {
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+.view-panel.hidden {
+    display: none !important;
+}
+
+/* ==========================================================================
+   DOWNLOAD ACTIONS GROUP
+   ========================================================================== */
+.download-actions-group {
+    display: flex;
+    gap: 12px;
+    margin-top: 20px;
+    width: 100%;
+}
+
+.download-actions-group .download-button {
+    flex: 1.3;
+    margin-top: 0;
+}
+
+.add-queue-button {
+    flex: 1;
+    background: #252934;
+    border: 1px solid #383e4e;
+    color: #e5e9f0;
+    font-size: 15px;
+    font-weight: 600;
+    padding: 14px 20px;
+    border-radius: 10px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.add-queue-button:hover {
+    background: #2f3442;
+    border-color: #ff0033;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.add-queue-button:active {
+    transform: translateY(0);
+}
+
+/* ==========================================================================
+   DOWNLOAD QUEUE VIEW
+   ========================================================================== */
+.queue-card {
+    background: #181a20;
+    border: 1px solid #292c34;
+    border-radius: 14px;
+    padding: 24px;
+    margin: 0 auto;
+    max-width: 960px;
+    width: 100%;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+.queue-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 16px;
+    margin-bottom: 20px;
+    border-bottom: 1px solid #292c34;
+    padding-bottom: 16px;
+}
+
+.queue-title-area {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.queue-title-area h2 {
+    font-size: 22px;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.queue-stats {
+    font-size: 13px;
+    color: #8f949e;
+    font-weight: 500;
+}
+
+.queue-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.concurrency-control {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 13px;
+    color: #a0a5b2;
+}
+
+.queue-select {
+    background: #232731;
+    border: 1px solid #363b49;
+    color: #f0f0f0;
+    padding: 6px 10px;
+    border-radius: 6px;
+    font-size: 13px;
+    outline: none;
+    cursor: pointer;
+}
+
+.queue-select:focus {
+    border-color: #ff0033;
+}
+
+.queue-btn {
+    padding: 7px 14px;
+    font-size: 13px;
+    font-weight: 600;
+    border-radius: 7px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    border: 1px solid transparent;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.queue-btn-primary {
+    background: #ff0033;
+    color: #ffffff;
+}
+
+.queue-btn-primary:hover {
+    background: #e0002d;
+    box-shadow: 0 0 10px rgba(255, 0, 51, 0.4);
+}
+
+.queue-btn-secondary {
+    background: #282c37;
+    color: #e0e4ec;
+    border-color: #3b4152;
+}
+
+.queue-btn-secondary:hover {
+    background: #343947;
+    color: #ffffff;
+}
+
+.queue-btn-ghost {
+    background: transparent;
+    color: #f87171;
+    border-color: rgba(248, 113, 113, 0.35);
+}
+
+.queue-btn-ghost:hover {
+    background: rgba(248, 113, 113, 0.15);
+    border-color: #f87171;
+}
+
+/* Filter Bar */
+.queue-filter-bar {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 18px;
+    overflow-x: auto;
+    padding-bottom: 4px;
+}
+
+.queue-filter-tab {
+    background: #20242d;
+    border: 1px solid #2d323f;
+    color: #8f949e;
+    padding: 6px 14px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+}
+
+.queue-filter-tab:hover {
+    color: #ffffff;
+    border-color: #4a5266;
+}
+
+.queue-filter-tab.active {
+    background: #ff0033;
+    color: #ffffff;
+    border-color: #ff0033;
+}
+
+/* Queue List Container */
+.queue-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-height: 580px;
+    overflow-y: auto;
+    padding-right: 4px;
+}
+
+.queue-list::-webkit-scrollbar {
+    width: 6px;
+}
+
+.queue-list::-webkit-scrollbar-thumb {
+    background: #333846;
+    border-radius: 3px;
+}
+
+/* Empty State */
+.queue-empty-state {
+    text-align: center;
+    padding: 56px 20px;
+    color: #6c7385;
+}
+
+.queue-empty-icon {
+    font-size: 42px;
+    margin-bottom: 12px;
+    opacity: 0.6;
+}
+
+.queue-empty-state h3 {
+    font-size: 17px;
+    color: #9aa1b3;
+    margin-bottom: 6px;
+}
+
+.queue-empty-state p {
+    font-size: 13px;
+}
+
+/* Queue Item Card */
+.queue-item {
+    background: #1f232c;
+    border: 1px solid #2d3340;
+    border-radius: 10px;
+    padding: 14px;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    transition: border-color 0.2s ease, transform 0.15s ease;
+}
+
+.queue-item:hover {
+    border-color: #434c5e;
+}
+
+.queue-item.status-downloading {
+    border-color: rgba(59, 130, 246, 0.5);
+    background: #202633;
+    box-shadow: 0 0 14px rgba(59, 130, 246, 0.08);
+}
+
+.queue-item.status-completed {
+    border-color: rgba(34, 197, 94, 0.35);
+}
+
+.queue-item.status-failed {
+    border-color: rgba(239, 68, 68, 0.4);
+}
+
+.queue-item.status-paused {
+    border-color: rgba(245, 158, 11, 0.4);
+}
+
+.queue-item-thumb-box {
+    width: 96px;
+    height: 56px;
+    border-radius: 6px;
+    overflow: hidden;
+    background: #14161d;
+    flex-shrink: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.queue-item-thumb {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.queue-item-thumb-placeholder {
+    font-size: 24px;
+    color: #4e5567;
+}
+
+.queue-item-info {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.queue-item-top {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    justify-content: space-between;
+}
+
+.queue-item-title-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    min-width: 0;
+    flex: 1;
+}
+
+.queue-item-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: #f3f4f6;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.queue-item-badge {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: #2b313e;
+    color: #93c5fd;
+    flex-shrink: 0;
+}
+
+.queue-item-badge.audio {
+    color: #a7f3d0;
+}
+
+.queue-item-badge.subtitle {
+    color: #fde047;
+}
+
+.queue-status-chip {
+    font-size: 11px;
+    font-weight: 700;
+    padding: 3px 9px;
+    border-radius: 12px;
+    flex-shrink: 0;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.status-chip-pending {
+    background: #2a2e3a;
+    color: #9ca3af;
+}
+
+.status-chip-downloading {
+    background: rgba(59, 130, 246, 0.2);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.35);
+}
+
+.status-chip-paused {
+    background: rgba(245, 158, 11, 0.2);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.35);
+}
+
+.status-chip-completed {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.status-chip-failed {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.status-chip-cancelled {
+    background: #2a2e3a;
+    color: #9ca3af;
+}
+
+/* Progress track */
+.queue-item-progress-track {
+    width: 100%;
+    height: 6px;
+    background: #14171f;
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.queue-item-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #ff0033, #ff4d6d);
+    transition: width 0.2s ease;
+    border-radius: 3px;
+}
+
+.queue-item.status-completed .queue-item-progress-fill {
+    background: linear-gradient(90deg, #10b981, #34d399);
+}
+
+.queue-item-meta {
+    display: flex;
+    justify-content: space-between;
+    font-size: 12px;
+    color: #8c93a4;
+}
+
+.queue-item-speed-eta {
+    display: flex;
+    gap: 10px;
+}
+
+/* Actions */
+.queue-item-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.queue-btn-icon {
+    width: 32px;
+    height: 32px;
+    border-radius: 6px;
+    background: #262b36;
+    border: 1px solid #363c4c;
+    color: #d1d5db;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    font-size: 13px;
+    transition: all 0.15s ease;
+}
+
+.queue-btn-icon:hover {
+    background: #353c4c;
+    color: #ffffff;
+    transform: translateY(-1px);
+}
+
+.queue-btn-icon.success:hover {
+    background: rgba(34, 197, 94, 0.2);
+    color: #4ade80;
+    border-color: #22c55e;
+}
+
+.queue-btn-icon.danger:hover {
+    background: rgba(239, 68, 68, 0.2);
+    color: #f87171;
+    border-color: #ef4444;
+}
+
+/* ==========================================================================
+   TOAST NOTIFICATION
+   ========================================================================== */
+.toast-notification {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 99999;
+    background: #1c202a;
+    border: 1px solid #343c4f;
+    color: #f3f4f6;
+    padding: 12px 20px;
+    border-radius: 10px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+}
+
+.toast-notification.hidden {
+    transform: translateY(30px);
+    opacity: 0;
+    pointer-events: none;
+}
+
+.toast-icon {
+    font-size: 18px;
+}
