@@ -3191,7 +3191,7 @@ class QueueManager {
 // ============================================================================
 // What's New / Changelog Dialog
 // ============================================================================
-const APP_CURRENT_VERSION = '1.1.0';
+const APP_CURRENT_VERSION = '1.2.0';
 
 function setupWhatsNewModal() {
     const modal = document.getElementById('whatsNewModal');
