@@ -57,7 +57,11 @@
       "target": [
         "portable",
         "zip"
-      ]
+      ],
+      "icon": "build/icon.ico",
+      "requestedExecutionLevel": "asInvoker",
+      "legalTrademarks": "YouTube Playlist Downloader",
+      "publisherName": "Mazen Mohamed"
     }
   }
 }
