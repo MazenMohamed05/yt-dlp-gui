@@ -3177,6 +3177,70 @@ function setupWhatsNewModal() {
     localStorage.setItem('app_last_seen_version', APP_CURRENT_VERSION);
 }
 
+// ============================================================================
+// Automatic App Update Checker
+// ============================================================================
+function setupAutoUpdateChecker() {
+    const modal = document.getElementById('appUpdateModal');
+    const curVerEl = document.getElementById('updateCurrentVersion');
+    const newVerEl = document.getElementById('updateNewVersion');
+    const notesEl = document.getElementById('updateReleaseNotes');
+    const downloadBtn = document.getElementById('updateDownloadBtn');
+    const laterBtn = document.getElementById('updateLaterBtn');
+
+    if (!modal) return;
+
+    let targetDownloadUrl = 'https://github.com/MazenMohamed05/yt-dlp-gui/releases';
+
+    function closeUpdateModal() {
+        modal.classList.add('hidden');
+    }
+
+    if (laterBtn) {
+        laterBtn.addEventListener('click', closeUpdateModal);
+    }
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeUpdateModal();
+    });
+
+    if (downloadBtn) {
+        downloadBtn.addEventListener('click', () => {
+            if (window.electronAPI && window.electronAPI.openExternalUrl) {
+                window.electronAPI.openExternalUrl(targetDownloadUrl);
+            }
+            closeUpdateModal();
+        });
+    }
+
+    async function checkUpdates(manual = false) {
+        if (!window.electronAPI || !window.electronAPI.checkForUpdates) return;
+        try {
+            const res = await window.electronAPI.checkForUpdates();
+            if (res && res.updateAvailable) {
+                targetDownloadUrl = res.downloadUrl || res.releaseUrl || targetDownloadUrl;
+                if (curVerEl) curVerEl.textContent = `Current: v${res.currentVersion || APP_CURRENT_VERSION}`;
+                if (newVerEl) newVerEl.textContent = `New: v${res.latestVersion}`;
+                if (notesEl) {
+                    notesEl.textContent = res.releaseNotes || 'Bug fixes and performance improvements.';
+                }
+                modal.classList.remove('hidden');
+            } else if (manual) {
+                showToast(`You are on the latest version (v${APP_CURRENT_VERSION})! ✨`, '✅');
+            }
+        } catch (e) {
+            if (manual) {
+                showToast('Could not check for updates. Check internet connection.', '⚠️');
+            }
+        }
+    }
+
+    // Automatic check 3 seconds after startup
+    setTimeout(() => {
+        checkUpdates(false);
+    }, 3000);
+}
+
 // Initialize on DOM ready
 let isInitialized = false;
 function initializeApp() {
@@ -3184,6 +3248,7 @@ function initializeApp() {
     isInitialized = true;
     setupNavigation();
     setupWhatsNewModal();
+    setupAutoUpdateChecker();
     if (!window.queueManager) {
         window.queueManager = new QueueManager();
     }

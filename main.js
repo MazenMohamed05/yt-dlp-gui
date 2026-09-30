@@ -15,7 +15,9 @@ const {
 
 const path = require('path');
 const fs = require('fs');
+const https = require('https');
 const { spawn } = require('child_process');
+const packageJson = require('./package.json');
 
 
 // ============================================================================
@@ -2873,6 +2875,94 @@ ipcMain.handle('show-in-folder', async (event, filePath) => {
             return { success: true };
         }
         return { success: false, message: 'Path does not exist' };
+    } catch (e) {
+        return { success: false, message: e.message };
+    }
+});
+
+function compareVersions(v1, v2) {
+    const clean1 = (v1 || '').replace(/^[^\d]*/, '').split('-')[0];
+    const clean2 = (v2 || '').replace(/^[^\d]*/, '').split('-')[0];
+    const p1 = clean1.split('.').map(n => parseInt(n, 10) || 0);
+    const p2 = clean2.split('.').map(n => parseInt(n, 10) || 0);
+    for (let i = 0; i < Math.max(p1.length, p2.length); i++) {
+        const num1 = p1[i] || 0;
+        const num2 = p2[i] || 0;
+        if (num1 > num2) return 1;
+        if (num1 < num2) return -1;
+    }
+    return 0;
+}
+
+ipcMain.handle('check-for-updates', async () => {
+    return new Promise((resolve) => {
+        const req = https.request({
+            hostname: 'api.github.com',
+            path: '/repos/MazenMohamed05/yt-dlp-gui/releases/latest',
+            method: 'GET',
+            headers: {
+                'User-Agent': 'YouTube-Playlist-Downloader-Client'
+            }
+        }, (res) => {
+            let body = '';
+            res.on('data', chunk => { body += chunk; });
+            res.on('end', () => {
+                try {
+                    if (res.statusCode !== 200) {
+                        return resolve({ updateAvailable: false, statusCode: res.statusCode });
+                    }
+                    const release = JSON.parse(body);
+                    const latestTag = release.tag_name || release.name || '';
+                    const currentVersion = packageJson.version || '1.1.0';
+                    const isNewer = compareVersions(latestTag, currentVersion) > 0;
+
+                    if (isNewer) {
+                        const setupAsset = Array.isArray(release.assets)
+                            ? release.assets.find(a => a.name.endsWith('.exe') && a.name.includes('Setup')) || release.assets.find(a => a.name.endsWith('.exe'))
+                            : null;
+
+                        return resolve({
+                            updateAvailable: true,
+                            currentVersion,
+                            latestVersion: latestTag.replace(/^v/, ''),
+                            releaseName: release.name || latestTag,
+                            releaseNotes: release.body || '',
+                            releaseUrl: release.html_url || 'https://github.com/MazenMohamed05/yt-dlp-gui/releases',
+                            downloadUrl: setupAsset ? setupAsset.browser_download_url : (release.html_url || 'https://github.com/MazenMohamed05/yt-dlp-gui/releases')
+                        });
+                    }
+
+                    return resolve({
+                        updateAvailable: false,
+                        currentVersion,
+                        latestVersion: latestTag.replace(/^v/, '')
+                    });
+                } catch (e) {
+                    resolve({ updateAvailable: false, error: e.message });
+                }
+            });
+        });
+
+        req.on('error', (err) => {
+            resolve({ updateAvailable: false, error: err.message });
+        });
+
+        req.setTimeout(7000, () => {
+            req.destroy();
+            resolve({ updateAvailable: false, error: 'Timeout' });
+        });
+
+        req.end();
+    });
+});
+
+ipcMain.handle('open-external-url', async (event, url) => {
+    try {
+        if (url && (url.startsWith('https://') || url.startsWith('http://'))) {
+            await shell.openExternal(url);
+            return { success: true };
+        }
+        return { success: false, message: 'Invalid URL' };
     } catch (e) {
         return { success: false, message: e.message };
     }

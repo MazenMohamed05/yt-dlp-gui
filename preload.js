@@ -152,6 +152,14 @@ chooseDownloadFolder: () => {
          */
         checkExistingFiles: (params) => {
             return ipcRenderer.invoke('check-existing-files', params);
+        },
+
+        checkForUpdates: () => {
+            return ipcRenderer.invoke('check-for-updates');
+        },
+
+        openExternalUrl: (url) => {
+            return ipcRenderer.invoke('open-external-url', url);
         }
 
     }

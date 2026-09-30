@@ -55,7 +55,9 @@
     ],
     "win": {
       "target": [
-        "nsis"
+        "nsis",
+        "portable",
+        "zip"
       ],
       "icon": "build/icon.ico",
       "requestedExecutionLevel": "asInvoker",

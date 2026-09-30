@@ -679,6 +679,35 @@
         </div>
     </div>
 
+    <!-- App Update Available Modal -->
+    <div id="appUpdateModal" class="custom-modal-overlay hidden">
+        <div class="custom-modal-box update-modal-box">
+            <div class="update-modal-header">
+                <div class="update-modal-icon">🎉</div>
+                <div class="update-modal-title-group">
+                    <h3 id="updateModalTitle" class="update-modal-title">New Update Available!</h3>
+                    <span id="updateModalSubtitle" class="update-modal-subtitle">يوجد تحديث جديد متاح للبرنامج</span>
+                </div>
+            </div>
+            <div class="update-modal-body">
+                <div class="update-version-badge-row">
+                    <span id="updateCurrentVersion" class="ver-pill ver-current">Current: v1.1.0</span>
+                    <span class="ver-arrow">➔</span>
+                    <span id="updateNewVersion" class="ver-pill ver-new">New: v1.2.0</span>
+                </div>
+                <div id="updateReleaseNotes" class="update-release-notes"></div>
+            </div>
+            <div class="update-modal-actions">
+                <button id="updateDownloadBtn" class="custom-modal-btn update-primary-btn">
+                    ⬇️ Download & Update / تحميل وتحديث
+                </button>
+                <button id="updateLaterBtn" class="custom-modal-btn update-ghost-btn">
+                    Later / لاحقاً
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast Notification -->
     <div id="toastNotification" class="toast-notification hidden">
         <span id="toastIcon" class="toast-icon">✅</span>
