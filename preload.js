@@ -122,7 +122,29 @@ chooseDownloadFolder: () => {
         'choose-download-folder'
     );
 
-}
+},
+
+        pauseDownload: () => {
+            return ipcRenderer.invoke('pause-download');
+        },
+
+        resumeDownload: () => {
+            return ipcRenderer.invoke('resume-download');
+        },
+
+        cancelDownload: () => {
+            return ipcRenderer.invoke('cancel-download');
+        },
+
+        /**
+         * Checks whether any media or subtitle files already exist in the target directory.
+         *
+         * @param {object} params - { outputDir, items, type, audioFormat, language }
+         * @returns {Promise<{ hasConflict: boolean, conflicts: Array<{ title: string, fileName: string }> }>}
+         */
+        checkExistingFiles: (params) => {
+            return ipcRenderer.invoke('check-existing-files', params);
+        }
 
     }
 );

@@ -55,6 +55,156 @@ window.alert = (msg) => {
     showModalAlert(msg);
 };
 
+let isDownloadPausedLocally = false;
+let isDownloadCancelledLocally = false;
+
+const downloadControlsEl = document.getElementById("downloadControls");
+const pauseDownloadBtn = document.getElementById("pauseDownloadButton");
+const pauseBtnIconEl = document.getElementById("pauseBtnIcon");
+const pauseBtnTextEl = document.getElementById("pauseBtnText");
+const cancelDownloadBtn = document.getElementById("cancelDownloadButton");
+
+function resetDownloadControlsUI() {
+    isDownloadPausedLocally = false;
+    if (pauseBtnIconEl) pauseBtnIconEl.textContent = "⏸️";
+    if (pauseBtnTextEl) pauseBtnTextEl.textContent = "Pause";
+    if (pauseDownloadBtn) pauseDownloadBtn.classList.remove("paused");
+    const spinner = document.querySelector(".status-spinner");
+    if (spinner) spinner.classList.remove("paused-spinner");
+}
+
+if (pauseDownloadBtn) {
+    pauseDownloadBtn.addEventListener("click", async () => {
+        if (!isDownloadPausedLocally) {
+            await window.electronAPI.pauseDownload();
+            isDownloadPausedLocally = true;
+            if (pauseBtnIconEl) pauseBtnIconEl.textContent = "▶️";
+            if (pauseBtnTextEl) pauseBtnTextEl.textContent = "Resume";
+            pauseDownloadBtn.classList.add("paused");
+            statusText.textContent = "Paused / متوقف مؤقتاً";
+            progressSpeed.textContent = "--";
+            progressEta.textContent = "--";
+            const spinner = document.querySelector(".status-spinner");
+            if (spinner) spinner.classList.add("paused-spinner");
+        } else {
+            await window.electronAPI.resumeDownload();
+            isDownloadPausedLocally = false;
+            if (pauseBtnIconEl) pauseBtnIconEl.textContent = "⏸️";
+            if (pauseBtnTextEl) pauseBtnTextEl.textContent = "Pause";
+            pauseDownloadBtn.classList.remove("paused");
+            statusText.textContent = "Downloading...";
+            const spinner = document.querySelector(".status-spinner");
+            if (spinner) spinner.classList.remove("paused-spinner");
+        }
+    });
+}
+
+if (cancelDownloadBtn) {
+    cancelDownloadBtn.addEventListener("click", async () => {
+        isDownloadCancelledLocally = true;
+        await window.electronAPI.cancelDownload();
+        if (downloadControlsEl) downloadControlsEl.classList.add("hidden");
+        resetDownloadControlsUI();
+        status.classList.add("hidden");
+        downloadProgress.classList.add("hidden");
+        alert("Download cancelled / تم إلغاء التنزيل.");
+    });
+}
+
+function showConflictPrompt({ isPlaylist, conflicts, totalCount }) {
+    return new Promise((resolve) => {
+        const modal = document.getElementById("conflictModal");
+        const titleEl = document.getElementById("conflictModalTitle");
+        const msgEl = document.getElementById("conflictModalMessage");
+        const fileEl = document.getElementById("conflictModalFileName");
+        const actionsEl = document.getElementById("conflictModalActions");
+
+        if (!modal || !titleEl || !msgEl || !actionsEl) {
+            resolve("overwrite");
+            return;
+        }
+
+        actionsEl.innerHTML = "";
+
+        const close = (action) => {
+            modal.classList.add("hidden");
+            window.removeEventListener("keydown", onKeyDown);
+            resolve(action);
+        };
+
+        const onKeyDown = (e) => {
+            if (e.key === "Escape") {
+                e.preventDefault();
+                close("cancel");
+            }
+        };
+
+        if (isPlaylist) {
+            titleEl.textContent = "Files Already Exist / ملفات موجودة بالفعل";
+            msgEl.textContent = `${conflicts.length} of ${totalCount} files already exist in this folder. What would you like to do?`;
+
+            if (fileEl) {
+                fileEl.classList.remove("hidden");
+                fileEl.textContent = conflicts.slice(0, 4).map(c => c.fileName).join("\n") + (conflicts.length > 4 ? `\n... (+${conflicts.length - 4} more)` : "");
+            }
+
+            const skipBtn = document.createElement("button");
+            skipBtn.className = "conflict-btn conflict-btn-skip";
+            skipBtn.textContent = "⏭️ Skip Existing / تخطي";
+            skipBtn.onclick = () => close("skip");
+            actionsEl.appendChild(skipBtn);
+
+            const overwriteBtn = document.createElement("button");
+            overwriteBtn.className = "conflict-btn conflict-btn-overwrite";
+            overwriteBtn.textContent = "🔄 Replace All / استبدال";
+            overwriteBtn.onclick = () => close("overwrite");
+            actionsEl.appendChild(overwriteBtn);
+
+            const renameBtn = document.createElement("button");
+            renameBtn.className = "conflict-btn conflict-btn-rename";
+            renameBtn.textContent = "📑 Keep Both / ترقيم (1)";
+            renameBtn.onclick = () => close("rename");
+            actionsEl.appendChild(renameBtn);
+
+            const cancelBtn = document.createElement("button");
+            cancelBtn.className = "conflict-btn conflict-btn-cancel";
+            cancelBtn.textContent = "✖ Cancel / إلغاء";
+            cancelBtn.onclick = () => close("cancel");
+            actionsEl.appendChild(cancelBtn);
+        } else {
+            const existingName = (conflicts[0] && conflicts[0].fileName) || "File";
+            titleEl.textContent = "File Already Exists / الملف موجود مسبقاً";
+            msgEl.textContent = "A file with this name already exists in the selected folder. What would you like to do?";
+
+            if (fileEl) {
+                fileEl.classList.remove("hidden");
+                fileEl.textContent = existingName;
+            }
+
+            const overwriteBtn = document.createElement("button");
+            overwriteBtn.className = "conflict-btn conflict-btn-overwrite";
+            overwriteBtn.textContent = "🔄 Replace / استبدال";
+            overwriteBtn.onclick = () => close("overwrite");
+            actionsEl.appendChild(overwriteBtn);
+
+            const renameBtn = document.createElement("button");
+            renameBtn.className = "conflict-btn conflict-btn-rename";
+            renameBtn.textContent = "📑 Keep Both / ترقيم (1)";
+            renameBtn.onclick = () => close("rename");
+            actionsEl.appendChild(renameBtn);
+
+            const cancelBtn = document.createElement("button");
+            cancelBtn.className = "conflict-btn conflict-btn-cancel";
+            cancelBtn.textContent = "✖ Cancel / إلغاء";
+            cancelBtn.onclick = () => close("cancel");
+            actionsEl.appendChild(cancelBtn);
+        }
+
+        window.addEventListener("keydown", onKeyDown);
+        modal.classList.remove("hidden");
+    });
+}
+
 // ========================================
         // Elements
         // ========================================
@@ -766,8 +916,18 @@ function buildQualityList(
             }
 
 
-            // Prefer MP4
+            // Prefer direct streams over m3u8 for accurate estimated size
+            const isFormatM3u8 = (format.protocol || '').includes('m3u8');
+            const isExistingM3u8 = (existing.protocol || '').includes('m3u8');
+            if (!isFormatM3u8 && isExistingM3u8) {
+                qualityMap.set(quality, format);
+                return;
+            }
+            if (isFormatM3u8 && !isExistingM3u8) {
+                return;
+            }
 
+            // Prefer MP4
             if (
                 format.ext === "mp4" &&
                 existing.ext !== "mp4"
@@ -1917,6 +2077,17 @@ document
 
         }
     );
+
+document
+    .getElementById(
+        "locationInput"
+    )
+    .addEventListener(
+        "click",
+        () => {
+            document.getElementById("browseButton").click();
+        }
+    );
         // ========================================
         // Download button
         // ========================================
@@ -1959,6 +2130,21 @@ document
 
                 }
 
+                const outputDir =
+                    document
+                        .getElementById(
+                            "locationInput"
+                        )
+                        .value
+                        .trim();
+
+                if (!outputDir) {
+                    alert(
+                        "Please select a download folder first."
+                    );
+                    return;
+                }
+
                 try {
 
                     status.classList.remove(
@@ -1967,15 +2153,6 @@ document
 
                     statusText.textContent =
                         "Downloading subtitles...";
-
-
-                    const outputDir =
-                        document
-                            .getElementById(
-                                "locationInput"
-                            )
-                            .value
-                            .trim();
 
 
                     let playlistEntries =
@@ -2047,6 +2224,32 @@ document
                     }
 
 
+                    // Check existing subtitle files
+                    let subCollisionAction = 'overwrite';
+                    try {
+                        const checkResult = await window.electronAPI.checkExistingFiles({
+                            outputDir,
+                            items: [{ title: currentData.title }],
+                            type: 'subtitle',
+                            language
+                        });
+
+                        if (checkResult && checkResult.hasConflict) {
+                            subCollisionAction = await showConflictPrompt({
+                                isPlaylist: false,
+                                conflicts: checkResult.conflicts,
+                                totalCount: 1
+                            });
+
+                            if (subCollisionAction === 'cancel') {
+                                status.classList.add("hidden");
+                                return;
+                            }
+                        }
+                    } catch (checkErr) {
+                        console.warn('Conflict check error (subtitles):', checkErr);
+                    }
+
                     const response =
     await window
         .electronAPI
@@ -2058,6 +2261,8 @@ document
             language,
 
             outputDir,
+
+            collisionAction: subCollisionAction,
 
             playlistEntries:
                 selectedEntries,
@@ -2145,6 +2350,20 @@ document
 
         }
 
+        const outputDir =
+            document
+                .getElementById(
+                    "locationInput"
+                )
+                .value
+                .trim();
+
+        if (!outputDir) {
+            alert(
+                "Please select a download folder first."
+            );
+            return;
+        }
 
         try {
 
@@ -2159,14 +2378,9 @@ document
                 "hidden"
             );
 
-
-            const outputDir =
-                document
-                    .getElementById(
-                        "locationInput"
-                    )
-                    .value
-                    .trim();
+            isDownloadCancelledLocally = false;
+            resetDownloadControlsUI();
+            if (downloadControlsEl) downloadControlsEl.classList.remove("hidden");
 
 
             // ========================================
@@ -2268,6 +2482,39 @@ document
             }
 
 
+            // ========================================
+            // Check for existing files
+            // ========================================
+            let mediaCollisionAction = 'overwrite';
+            const conflictTitlesSet = new Set();
+
+            try {
+                const conflictCheck = await window.electronAPI.checkExistingFiles({
+                    outputDir,
+                    items: downloadEntries.map(e => ({ title: e.title })),
+                    type: currentType,
+                    audioFormat: selectedQuality
+                });
+
+                if (conflictCheck && conflictCheck.hasConflict && conflictCheck.conflicts.length > 0) {
+                    conflictCheck.conflicts.forEach(c => conflictTitlesSet.add(c.title));
+
+                    mediaCollisionAction = await showConflictPrompt({
+                        isPlaylist: downloadEntries.length > 1,
+                        conflicts: conflictCheck.conflicts,
+                        totalCount: downloadEntries.length
+                    });
+
+                    if (mediaCollisionAction === 'cancel') {
+                        status.classList.add("hidden");
+                        downloadProgress.classList.add("hidden");
+                        return;
+                    }
+                }
+            } catch (conflictErr) {
+                console.warn('Conflict check error:', conflictErr);
+            }
+
             const totalDownloads =
                 downloadEntries.length;
 
@@ -2275,6 +2522,7 @@ document
             const failedDownloads =
                 [];
 
+            let skippedCount = 0;
 
             // ========================================
             // Download selected entries one by one
@@ -2286,6 +2534,10 @@ document
                 i++
             ) {
 
+                if (isDownloadCancelledLocally) {
+                    break;
+                }
+
                 const entry =
                     downloadEntries[i];
 
@@ -2294,6 +2546,11 @@ document
                     entry.title ||
                     `Video ${i + 1}`;
 
+                // Skip if user chose skip and entry already exists
+                if (mediaCollisionAction === 'skip' && conflictTitlesSet.has(entry.title)) {
+                    skippedCount++;
+                    continue;
+                }
 
                 statusText.textContent =
                     totalDownloads > 1
@@ -2324,10 +2581,21 @@ document
                                 quality:
                                     selectedQuality,
 
-                                outputDir
+                                outputDir,
+
+                                collisionAction:
+                                    mediaCollisionAction,
+
+                                title:
+                                    entry.title
 
                             });
 
+
+                    if (response && response.cancelled) {
+                        isDownloadCancelledLocally = true;
+                        break;
+                    }
 
                     if (
                         !response ||
@@ -2366,25 +2634,35 @@ document
 
             resetDownloadProgress();
 
+            if (downloadControlsEl) downloadControlsEl.classList.add("hidden");
+            resetDownloadControlsUI();
 
             status.classList.add(
                 "hidden"
             );
 
+            if (isDownloadCancelledLocally) {
+                return;
+            }
+
 
             if (
                 failedDownloads.length === 0
             ) {
-
-                alert(
-                    totalDownloads > 1
+                const downloadedCount = totalDownloads - skippedCount;
+                let successMsg = "";
+                if (skippedCount > 0) {
+                    successMsg = `${downloadedCount} downloaded, ${skippedCount} skipped (already existed).`;
+                } else {
+                    successMsg = totalDownloads > 1
                         ? `All ${totalDownloads} selected videos downloaded successfully.`
                         : (
                             currentType === "audio"
                                 ? "Audio downloaded successfully."
                                 : "Video downloaded successfully."
-                        )
-                );
+                        );
+                }
+                alert(successMsg);
 
             } else {
 

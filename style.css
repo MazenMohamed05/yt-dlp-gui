@@ -1400,3 +1400,178 @@ body {
 .custom-modal-btn:active {
     transform: translateY(0);
 }
+
+/* ==========================================================================
+   Conflict Resolution Modal Styles
+   ========================================================================== */
+
+.conflict-box {
+    max-width: 520px;
+    width: 90%;
+    padding: 28px 24px;
+    gap: 16px;
+    text-align: center;
+}
+
+.conflict-title {
+    color: #ffffff;
+    font-size: 18px;
+    font-weight: 700;
+}
+
+.conflict-file-name {
+    background: #181b22;
+    border: 1px solid #2d3340;
+    border-radius: 8px;
+    padding: 10px 14px;
+    color: #3ea6ff;
+    font-family: Consolas, monospace;
+    font-size: 13px;
+    word-break: break-all;
+    max-height: 90px;
+    overflow-y: auto;
+    text-align: left;
+    width: 100%;
+    white-space: pre-wrap;
+}
+
+.conflict-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: wrap;
+    width: 100%;
+    margin-top: 8px;
+}
+
+.conflict-btn {
+    border: none;
+    border-radius: 8px;
+    padding: 10px 18px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background 0.15s ease, transform 0.1s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.conflict-btn:hover {
+    transform: translateY(-1px);
+}
+
+.conflict-btn:active {
+    transform: translateY(0);
+}
+
+.conflict-btn-overwrite {
+    background: #ff0033;
+    color: #ffffff;
+}
+
+.conflict-btn-overwrite:hover {
+    background: #e6002e;
+}
+
+.conflict-btn-rename {
+    background: #065fd4;
+    color: #ffffff;
+}
+
+.conflict-btn-rename:hover {
+    background: #004bb5;
+}
+
+.conflict-btn-skip {
+    background: #00a86b;
+    color: #ffffff;
+}
+
+.conflict-btn-skip:hover {
+    background: #008f5a;
+}
+
+.conflict-btn-cancel {
+    background: #2b303c;
+    color: #d1d5db;
+}
+
+.conflict-btn-cancel:hover {
+    background: #394050;
+    color: #ffffff;
+}
+
+/* ==========================================================================
+   Download Controls (Pause / Resume / Cancel)
+   ========================================================================== */
+
+.download-controls {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    margin-top: 14px;
+}
+
+.download-controls.hidden {
+    display: none !important;
+}
+
+.download-control-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 7px 18px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.download-control-btn:hover {
+    transform: translateY(-1px);
+}
+
+.download-control-btn:active {
+    transform: translateY(0);
+}
+
+.download-control-btn.pause-btn {
+    background: #252830;
+    color: #e0e0e0;
+    border: 1px solid #3b404d;
+}
+
+.download-control-btn.pause-btn:hover {
+    background: #333844;
+    color: #ffffff;
+    border-color: #4f5667;
+}
+
+.download-control-btn.pause-btn.paused {
+    background: #065fd4;
+    color: #ffffff;
+    border-color: #065fd4;
+}
+
+.download-control-btn.pause-btn.paused:hover {
+    background: #004bb5;
+}
+
+.download-control-btn.cancel-btn {
+    background: rgba(255, 0, 51, 0.12);
+    color: #ff4d6d;
+    border: 1px solid rgba(255, 0, 51, 0.28);
+}
+
+.download-control-btn.cancel-btn:hover {
+    background: #ff0033;
+    color: #ffffff;
+    border-color: #ff0033;
+}
+
+.paused-spinner {
+    animation-play-state: paused !important;
+}

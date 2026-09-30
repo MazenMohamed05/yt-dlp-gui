@@ -5,17 +5,11 @@
 
     <meta charset="UTF-8">
 
-    <meta
-        name="viewport"
-        content="width=device-width, initial-scale=1.0"
-    >
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
     <title>YouTube Downloader</title>
 
-    <link
-        rel="stylesheet"
-        href="style.css"
-    >
+    <link rel="stylesheet" href="style.css">
 
 </head>
 
@@ -81,12 +75,7 @@
 
                 <div class="url-container">
 
-                    <input
-                        id="urlInput"
-                        type="text"
-                        placeholder="Paste YouTube URL here..."
-                        autocomplete="off"
-                    >
+                    <input id="urlInput" type="text" placeholder="Paste YouTube URL here..." autocomplete="off">
 
 
                     <button id="pasteButton">
@@ -102,10 +91,7 @@
                      Analyze
                 ========================================= -->
 
-                <button
-                    id="analyzeButton"
-                    class="primary-button"
-                >
+                <button id="analyzeButton" class="primary-button">
 
                     Analyze URL
 
@@ -128,10 +114,7 @@
 
                         <!-- Video -->
 
-                        <button
-                            class="type-card active"
-                            data-type="video"
-                        >
+                        <button class="type-card active" data-type="video">
 
                             <span class="type-icon">
                                 🎬
@@ -156,10 +139,7 @@
 
                         <!-- Audio -->
 
-                        <button
-                            class="type-card"
-                            data-type="audio"
-                        >
+                        <button class="type-card" data-type="audio">
 
                             <span class="type-icon">
                                 🎵
@@ -184,10 +164,7 @@
 
                         <!-- Subtitles -->
 
-                        <button
-                            class="type-card"
-                            data-type="subtitle"
-                        >
+                        <button class="type-card" data-type="subtitle">
 
                             <span class="type-icon">
                                 💬
@@ -219,10 +196,7 @@
                      Status
                 ========================================= -->
 
-                <div
-                    id="status"
-                    class="status hidden"
-                >
+                <div id="status" class="status hidden">
 
                     <div class="status-spinner"></div>
 
@@ -232,51 +206,60 @@
                         Ready
 
                     </span>
-                    <div
-    id="downloadProgress"
-    class="download-progress hidden"
->
+                    <div id="downloadProgress" class="download-progress hidden">
 
-    <div class="progress-info">
+                        <div class="progress-info">
 
-        <span id="progressPercent">
-            0%
-        </span>
+                            <span id="progressPercent">
+                                0%
+                            </span>
 
-        <span id="progressSpeed">
-            --
-        </span>
+                            <span id="progressSpeed">
+                                --
+                            </span>
 
-        <span id="progressEta">
-            --
-        </span>
+                            <span id="progressEta">
+                                --
+                            </span>
 
-    </div>
+                        </div>
 
 
-    <div class="progress-bar">
+                        <div class="progress-bar">
 
-        <div
-            id="progressBarFill"
-            class="progress-bar-fill"
-        ></div>
+                            <div id="progressBarFill" class="progress-bar-fill"></div>
 
-    </div>
+                        </div>
 
 
-    <div class="progress-details">
+                        <div class="progress-details">
 
-        <span id="progressDownloaded">
-            --
-        </span>
+                            <span id="progressDownloaded">
+                                --
+                            </span>
 
-        <span id="progressTotal">
-            --
-        </span>
+                            <span id="progressTotal">
+                                --
+                            </span>
 
-    </div>
+                        </div>
 
-</div>
+
+                        <div id="downloadControls" class="download-controls hidden">
+
+                            <button id="pauseDownloadButton" class="download-control-btn pause-btn" type="button">
+                                <span id="pauseBtnIcon">⏸️</span>
+                                <span id="pauseBtnText">Pause</span>
+                            </button>
+
+                            <button id="cancelDownloadButton" class="download-control-btn cancel-btn" type="button">
+                                <span>✖</span>
+                                <span>Cancel</span>
+                            </button>
+
+                        </div>
+
+                    </div>
 
                 </div>
 
@@ -285,10 +268,7 @@
                      Analysis Result
                 ========================================= -->
 
-                <div
-                    id="result"
-                    class="result hidden"
-                >
+                <div id="result" class="result hidden">
 
 
                     <div class="result-header">
@@ -383,14 +363,9 @@
                              Playlist
                         ========================================= -->
 
-                        <div
-                            id="playlistContainer"
-                            class="playlist-summary hidden"
-                        >
+                        <div id="playlistContainer" class="playlist-summary hidden">
 
-                            <div
-                                class="playlist-summary-info"
-                            >
+                            <div class="playlist-summary-info">
 
                                 <h3>
                                     Playlist
@@ -403,20 +378,11 @@
                             </div>
 
 
-                            <div
-                                class="playlist-selection-bar hidden"
-                                id="playlistSelectionBar"
-                            >
+                            <div class="playlist-selection-bar hidden" id="playlistSelectionBar">
 
-                                <label
-                                    class="playlist-select-all"
-                                >
+                                <label class="playlist-select-all">
 
-                                    <input
-                                        id="playlistSelectAll"
-                                        type="checkbox"
-                                        checked
-                                    >
+                                    <input id="playlistSelectAll" type="checkbox" checked>
 
                                     <span>
                                         Select All
@@ -425,27 +391,17 @@
                                 </label>
 
 
-                                <span
-                                    id="playlistSelectedCount"
-                                    class="playlist-selected-count"
-                                >
+                                <span id="playlistSelectedCount" class="playlist-selected-count">
                                     0 videos selected
                                 </span>
 
                             </div>
 
 
-                            <div
-                                id="playlistList"
-                                class="playlist-list hidden"
-                            ></div>
+                            <div id="playlistList" class="playlist-list hidden"></div>
 
 
-                            <button
-                                id="playlistToggleButton"
-                                type="button"
-                                class="playlist-toggle-button"
-                            >
+                            <button id="playlistToggleButton" type="button" class="playlist-toggle-button">
                                 View Videos
                             </button>
 
@@ -498,12 +454,7 @@
                         <div class="location-container">
 
 
-                            <input
-                                id="locationInput"
-                                type="text"
-                                placeholder="Choose download folder..."
-                                readonly
-                            >
+                            <input id="locationInput" type="text" placeholder="Choose download folder..." readonly>
 
 
                             <button id="browseButton">
@@ -522,10 +473,7 @@
                          Download
                     ========================================= -->
 
-                    <button
-                        id="downloadButton"
-                        class="download-button"
-                    >
+                    <button id="downloadButton" class="download-button">
 
                         Download
 
@@ -567,17 +515,23 @@
     </div>
 
 
-    <!-- ========================================
-         JavaScript
-    ========================================= -->
-
-    
     <!-- Custom In-App Modal Dialog -->
     <div id="customModal" class="custom-modal-overlay hidden">
         <div class="custom-modal-box">
             <div id="customModalIcon" class="custom-modal-icon">ℹ️</div>
             <div id="customModalMessage" class="custom-modal-message"></div>
             <button id="customModalButton" class="custom-modal-btn">OK</button>
+        </div>
+    </div>
+
+    <!-- Conflict Resolution Dialog Modal -->
+    <div id="conflictModal" class="custom-modal-overlay hidden">
+        <div class="custom-modal-box conflict-box">
+            <div id="conflictModalIcon" class="custom-modal-icon">⚠️</div>
+            <div id="conflictModalTitle" class="conflict-title">File Already Exists</div>
+            <div id="conflictModalMessage" class="custom-modal-message"></div>
+            <div id="conflictModalFileName" class="conflict-file-name hidden"></div>
+            <div id="conflictModalActions" class="conflict-actions"></div>
         </div>
     </div>
 

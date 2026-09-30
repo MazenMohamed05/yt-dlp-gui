@@ -100,11 +100,146 @@ function createWindow() {
         )
     );
 
+    win.on('close', () => {
+        cleanupDownloadsOnExit();
+    });
+
+}
+
+// ============================================================================
+// File Conflict Detection & Auto-Numbering Helpers
+// ============================================================================
+
+function sanitizeFilename(str) {
+    return String(str || '')
+        .replace(/[\\/:*?"<>|]/g, '_')
+        .trim();
+}
+
+function normalizeForComparison(str) {
+    return String(str || '')
+        .toLowerCase()
+        .replace(/[\\/:*?"<>|_—\-()[\]{}.]/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function findExistingFile(outputDir, rawTitle, type, audioFormat = 'mp3', language = '') {
+    if (!outputDir || !fs.existsSync(outputDir)) {
+        return null;
+    }
+
+    let files;
+    try {
+        files = fs.readdirSync(outputDir);
+    } catch {
+        return null;
+    }
+
+    if (!files || files.length === 0) {
+        return null;
+    }
+
+    const targetNorm = normalizeForComparison(rawTitle);
+    if (!targetNorm) {
+        return null;
+    }
+
+    const validExts = new Set();
+    if (type === 'video') {
+        ['.mp4', '.mkv', '.webm', '.avi', '.mov'].forEach(e => validExts.add(e));
+    } else if (type === 'audio') {
+        const af = (audioFormat || 'mp3').toLowerCase();
+        ['.' + af, '.mp3', '.m4a', '.opus', '.wav', '.webm', '.aac', '.flac'].forEach(e => validExts.add(e));
+    } else if (type === 'subtitle') {
+        ['.srt', '.vtt'].forEach(e => validExts.add(e));
+    }
+
+    for (const file of files) {
+        const parsed = path.parse(file);
+        const ext = parsed.ext.toLowerCase();
+
+        if (validExts.size > 0 && !validExts.has(ext)) {
+            continue;
+        }
+
+        let fileStem = parsed.name;
+        if (type === 'subtitle' && language) {
+            fileStem = fileStem.replace(new RegExp('\\.' + language + '$', 'i'), '');
+        }
+
+        const fileNorm = normalizeForComparison(fileStem);
+        if (fileNorm === targetNorm) {
+            return file;
+        }
+    }
+
+    return null;
+}
+
+function getNextRenameIndex(outputDir, rawTitle, type, audioFormat = 'mp3') {
+    if (!outputDir || !fs.existsSync(outputDir)) {
+        return 1;
+    }
+
+    let files;
+    try {
+        files = fs.readdirSync(outputDir);
+    } catch {
+        return 1;
+    }
+
+    const targetNorm = normalizeForComparison(rawTitle);
+    let baseExists = false;
+    let maxNumber = 0;
+
+    for (const file of files) {
+        const parsed = path.parse(file);
+        const match = parsed.name.match(/\((\d+)\)$/);
+        if (match) {
+            const nameWithoutNumber = parsed.name.replace(/\(\d+\)$/, '').trim();
+            if (normalizeForComparison(nameWithoutNumber) === targetNorm) {
+                const num = parseInt(match[1], 10);
+                if (num > maxNumber) {
+                    maxNumber = num;
+                }
+            }
+        } else if (normalizeForComparison(parsed.name) === targetNorm) {
+            baseExists = true;
+        }
+    }
+
+    return baseExists || maxNumber > 0 ? maxNumber + 1 : 0;
 }
 
 // ============================================================================
 // yt-dlp Process Execution & Resilience Layer
 // ============================================================================
+
+let activeYtDlpProcess = null;
+const downloadState = {
+    isCancelled: false,
+    isPaused: false,
+    resumePromiseResolve: null
+};
+
+function killProcessTree(pid) {
+    if (!pid) return;
+    try {
+        spawn('taskkill', ['/pid', String(pid), '/T', '/F'], { windowsHide: true });
+    } catch (e) {
+        console.error('Error in killProcessTree:', e);
+    }
+}
+
+function cleanupDownloadsOnExit() {
+    downloadState.isCancelled = true;
+    downloadState.isPaused = false;
+    if (activeYtDlpProcess && activeYtDlpProcess.pid) {
+        killProcessTree(activeYtDlpProcess.pid);
+        activeYtDlpProcess = null;
+    }
+}
 
 /**
  * Executes a yt-dlp operation with automatic exponential/delayed retry logic.
@@ -122,16 +257,49 @@ async function downloadWithRetry(args, onProgress = null, maxRetries = 3) {
         onProgress = null;
     }
 
-    for (let attempt = 1; attempt <= maxRetries; attempt++) {
+    let attempt = 1;
+    while (attempt <= maxRetries) {
+        if (downloadState.isCancelled) {
+            throw new Error('DOWNLOAD_CANCELLED');
+        }
+
+        if (downloadState.isPaused) {
+            await new Promise((resolve) => {
+                downloadState.resumePromiseResolve = resolve;
+            });
+            if (downloadState.isCancelled) {
+                throw new Error('DOWNLOAD_CANCELLED');
+            }
+        }
+
         try {
-            return await runYtDlp(args, onProgress);
+            const res = await runYtDlp(args, onProgress);
+            if (res === 'PAUSED') {
+                await new Promise((resolve) => {
+                    downloadState.resumePromiseResolve = resolve;
+                });
+                if (downloadState.isCancelled) {
+                    throw new Error('DOWNLOAD_CANCELLED');
+                }
+                continue;
+            }
+            return res;
         } catch (error) {
+            if (downloadState.isCancelled || error.message === 'DOWNLOAD_CANCELLED') {
+                throw new Error('DOWNLOAD_CANCELLED');
+            }
+            if (downloadState.isPaused) {
+                await new Promise((resolve) => {
+                    downloadState.resumePromiseResolve = resolve;
+                });
+                continue;
+            }
+
             console.warn(`Attempt ${attempt} failed with error: ${error.message}`);
-            
             if (attempt === maxRetries) {
                 throw error;
             }
-
+            attempt++;
             await new Promise((resolve) => setTimeout(resolve, 2000));
         }
     }
@@ -155,6 +323,10 @@ function runYtDlp(
     return new Promise(
         (resolve, reject) => {
 
+            if (downloadState.isCancelled) {
+                return reject(new Error('DOWNLOAD_CANCELLED'));
+            }
+
             const process = spawn(
                 YTDLP_PATH,
                 args,
@@ -162,6 +334,7 @@ function runYtDlp(
                     windowsHide: true
                 }
             );
+            activeYtDlpProcess = process;
 
 
             let stdout = '';
@@ -255,6 +428,7 @@ function runYtDlp(
                     const value =
                         data.toString();
 
+                    console.log('[yt-dlp stdout]:', value.trim());
 
                     stdout +=
                         value;
@@ -315,6 +489,16 @@ function runYtDlp(
 
                     }
 
+
+                    activeYtDlpProcess = null;
+
+                    if (downloadState.isCancelled) {
+                        return reject(new Error('DOWNLOAD_CANCELLED'));
+                    }
+
+                    if (downloadState.isPaused) {
+                        return resolve('PAUSED');
+                    }
 
                     if (
                         code === 0
@@ -1349,6 +1533,10 @@ ipcMain.handle(
                                     format.ext ||
                                     '',
 
+                                protocol:
+                                    format.protocol ||
+                                    '',
+
                                 fps:
                                     Number(
                                         format.fps
@@ -1449,6 +1637,17 @@ ipcMain.handle(
 
                 }
 
+
+                // Prefer direct HTTPS stream over m3u8 stream for accurate size estimation
+                const isFormatM3u8 = (format.protocol || '').includes('m3u8');
+                const isExistingM3u8 = (existing.protocol || '').includes('m3u8');
+                if (!isFormatM3u8 && isExistingM3u8) {
+                    qualityMap.set(quality, format);
+                    continue;
+                }
+                if (isFormatM3u8 && !isExistingM3u8) {
+                    continue;
+                }
 
                 if (
                     format.ext === 'mp4' &&
@@ -1772,10 +1971,11 @@ ipcMain.handle(
                 typeof options.outputDir === 'string' &&
                 options.outputDir.trim()
                     ? options.outputDir.trim()
-                    : path.join(
-                        process.cwd(),
-                        'downloads'
-                    );
+                    : '';
+
+            if (!outputDir) {
+                throw new Error('Please select a download folder.');
+            }
 
 
             const language =
@@ -1966,6 +2166,10 @@ ipcMain.handle(
                                     'vtt',
 
                                     '--windows-filenames',
+
+                    '--force-overwrites',
+
+                    '--force-overwrites',
 
                                     '-o',
                                     playlistOutputTemplate,
@@ -2324,6 +2528,8 @@ ipcMain.handle(
 
                         '--windows-filenames',
 
+                        ...(collisionAction === 'overwrite' ? ['--force-overwrites'] : []),
+
                         '-o',
                         outputTemplate,
 
@@ -2553,6 +2759,73 @@ ipcMain.handle(
 // IPC Handler: Media Download Pipeline (Video & Audio)
 // ============================================================================
 
+ipcMain.handle('pause-download', () => {
+    downloadState.isPaused = true;
+    if (activeYtDlpProcess && activeYtDlpProcess.pid) {
+        killProcessTree(activeYtDlpProcess.pid);
+        activeYtDlpProcess = null;
+    }
+    return { success: true, isPaused: true };
+});
+
+ipcMain.handle('resume-download', () => {
+    downloadState.isPaused = false;
+    if (typeof downloadState.resumePromiseResolve === 'function') {
+        const resolve = downloadState.resumePromiseResolve;
+        downloadState.resumePromiseResolve = null;
+        resolve();
+    }
+    return { success: true, isPaused: false };
+});
+
+ipcMain.handle('cancel-download', () => {
+    downloadState.isCancelled = true;
+    downloadState.isPaused = false;
+    if (typeof downloadState.resumePromiseResolve === 'function') {
+        const resolve = downloadState.resumePromiseResolve;
+        downloadState.resumePromiseResolve = null;
+        resolve();
+    }
+    if (activeYtDlpProcess && activeYtDlpProcess.pid) {
+        killProcessTree(activeYtDlpProcess.pid);
+        activeYtDlpProcess = null;
+    }
+    return { success: true, isCancelled: true };
+});
+
+/**
+ * Handles 'check-existing-files' requests from the renderer process.
+ */
+ipcMain.handle('check-existing-files', async (event, params) => {
+    try {
+        const { outputDir, items, type, audioFormat, language } = params || {};
+        if (!outputDir || !items || !Array.isArray(items) || items.length === 0) {
+            return { hasConflict: false, conflicts: [] };
+        }
+
+        const conflicts = [];
+        for (const item of items) {
+            const rawTitle = typeof item === 'string' ? item : (item && item.title ? item.title : '');
+            if (!rawTitle) continue;
+            const existingFile = findExistingFile(outputDir, rawTitle, type, audioFormat, language);
+            if (existingFile) {
+                conflicts.push({
+                    title: rawTitle,
+                    fileName: existingFile
+                });
+            }
+        }
+
+        return {
+            hasConflict: conflicts.length > 0,
+            conflicts
+        };
+    } catch (err) {
+        console.error('Error in check-existing-files:', err);
+        return { hasConflict: false, conflicts: [] };
+    }
+});
+
 /**
  * Handles 'download-media' requests from the renderer process.
  * 
@@ -2612,15 +2885,30 @@ ipcMain.handle(
                     ? options.audioFormat.trim()
                     : 'mp3';
 
+            const collisionAction =
+                typeof options.collisionAction === 'string'
+                    ? options.collisionAction.trim()
+                    : 'overwrite';
+
+            const videoTitle =
+                typeof options.title === 'string'
+                    ? options.title.trim()
+                    : '';
+
+            downloadState.isCancelled = false;
+            downloadState.isPaused = false;
+            downloadState.resumePromiseResolve = null;
+
 
             const outputDir =
                 typeof options.outputDir === 'string' &&
                 options.outputDir.trim()
                     ? options.outputDir.trim()
-                    : path.join(
-                        process.cwd(),
-                        'downloads'
-                    );
+                    : '';
+
+            if (!outputDir) {
+                throw new Error('Please select a download folder.');
+            }
 
 
             if (
@@ -2668,43 +2956,54 @@ ipcMain.handle(
                         : Number(cleanQuality);
 
                 let format;
+                let formatSort;
 
                 if (
                     height === 'best' || isNaN(height)
                 ) {
 
                     format =
-                        'bestvideo[ext=mp4]+bestaudio[ext=m4a]/' +
                         'bestvideo+bestaudio/best';
+                    formatSort = 'res,vcodec:h264,fps';
 
                 } else {
 
                     format =
-                        `bestvideo[height<=${height}][ext=mp4]+bestaudio[ext=m4a]/` +
-                        `bestvideo[height<=${height}]+bestaudio/` +
-                        `best[height<=${height}]/` +
+                        `bestvideo[height<=?${height}]+bestaudio/` +
+                        `best[height<=?${height}]/` +
                         'best';
+                    formatSort = `res:${height},vcodec:h264,fps`;
 
                 }
 
 
+                let renameSuffix = '';
+                if (collisionAction === 'rename' && videoTitle) {
+                    const nextIdx = getNextRenameIndex(outputDir, videoTitle, 'video');
+                    if (nextIdx > 0) {
+                        renameSuffix = ` (${nextIdx})`;
+                    }
+                }
+
                 const outputTemplate =
                     path.join(
                         outputDir,
-                        '%(title)s.%(ext)s'
+                        `%(title)s${renameSuffix}.%(ext)s`
                     );
 
+
+                console.log('>>> [MEDIA DOWNLOAD] Target:', url);
+                console.log('>>> [MEDIA DOWNLOAD] Requested Quality:', rawQuality, 'Height:', height);
+                console.log('>>> [MEDIA DOWNLOAD] Format Selector:', format);
+                console.log('>>> [MEDIA DOWNLOAD] Format Sort:', formatSort);
 
                 const args = [
 
                     '--js-runtimes',
                     `deno:${DENO_PATH}`,
 
-                    '--extractor-args',
-                    'youtube:player_client=mweb,ios,web',
-
-                    '--user-agent',
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
+                    '-S',
+                    formatSort,
 
                     '--no-cache-dir',
 
@@ -2720,6 +3019,8 @@ ipcMain.handle(
                     '--no-check-certificates',
 
                     '--no-playlist',
+
+                    ...(collisionAction === 'overwrite' ? ['--force-overwrites'] : ['-c']),
 
                     '-f',
                     format,
@@ -2745,6 +3046,22 @@ ipcMain.handle(
                     url
 
                 ];
+
+                if (collisionAction === 'overwrite' && videoTitle) {
+                    try {
+                        const existingMatch = findExistingFile(outputDir, videoTitle, 'video');
+                        if (existingMatch) {
+                            try {
+                                fs.unlinkSync(path.join(outputDir, existingMatch));
+                                console.log('>>> [OVERWRITE] Removed existing video file:', existingMatch);
+                            } catch (uErr) {
+                                console.warn('Could not unlink old video file:', uErr);
+                            }
+                        }
+                    } catch (cleanErr) {
+                        console.warn('Error cleaning existing file for overwrite:', cleanErr);
+                    }
+                }
 
 
                 const unifiedProgress =
@@ -2788,10 +3105,18 @@ ipcMain.handle(
                 type === 'audio'
             ) {
 
+                let audioRenameSuffix = '';
+                if (collisionAction === 'rename' && videoTitle) {
+                    const nextIdx = getNextRenameIndex(outputDir, videoTitle, 'audio', audioFormat);
+                    if (nextIdx > 0) {
+                        audioRenameSuffix = ` (${nextIdx})`;
+                    }
+                }
+
                 const outputTemplate =
                     path.join(
                         outputDir,
-                        '%(title)s.%(ext)s'
+                        `%(title)s${audioRenameSuffix}.%(ext)s`
                     );
 
                 // Use the explicitly selected formatId (e.g., 251 for Opus or 140 for AAC m4a),
@@ -2805,13 +3130,6 @@ ipcMain.handle(
 
                     '--js-runtimes',
                     `deno:${DENO_PATH}`,
-
-                    // Use web and android player clients to prevent PO Token requirement warnings
-                    '--extractor-args',
-                    'youtube:player_client=web,android',
-
-                    '--user-agent',
-                    'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/122.0.0.0 Safari/537.36',
 
                     '--no-cache-dir',
 
@@ -2827,6 +3145,8 @@ ipcMain.handle(
                     '--no-check-certificates',
 
                     '--no-playlist',
+
+                    ...(collisionAction === 'overwrite' ? ['--force-overwrites'] : ['-c']),
 
                     '-f',
                     formatSpec,
@@ -2848,6 +3168,22 @@ ipcMain.handle(
                     url
 
                 ];
+
+                if (collisionAction === 'overwrite' && videoTitle) {
+                    try {
+                        const existingMatch = findExistingFile(outputDir, videoTitle, 'audio', audioFormat);
+                        if (existingMatch) {
+                            try {
+                                fs.unlinkSync(path.join(outputDir, existingMatch));
+                                console.log('>>> [OVERWRITE] Removed existing audio file:', existingMatch);
+                            } catch (uErr) {
+                                console.warn('Could not unlink old audio file:', uErr);
+                            }
+                        }
+                    } catch (cleanErr) {
+                        console.warn('Error cleaning existing audio file for overwrite:', cleanErr);
+                    }
+                }
 
                 await downloadWithRetry(
                     args,
@@ -2878,6 +3214,14 @@ ipcMain.handle(
 
 
         } catch (error) {
+
+            if (error.message === 'DOWNLOAD_CANCELLED' || downloadState.isCancelled) {
+                return {
+                    success: false,
+                    cancelled: true,
+                    message: 'Download cancelled by user.'
+                };
+            }
 
             console.error(
                 'Media download error:',
@@ -3491,6 +3835,10 @@ ipcMain.handle(
  * Quits the application when all windows are closed (except on macOS/Darwin,
  * where applications typically remain open until explicitly quit with Cmd+Q).
  */
+app.on('before-quit', () => {
+    cleanupDownloadsOnExit();
+});
+
 app.on(
     'window-all-closed',
     () => {
