@@ -3131,17 +3131,67 @@ class QueueManager {
     }
 }
 
-// Initialize on DOM ready
-document.addEventListener("DOMContentLoaded", () => {
-    setupNavigation();
-    if (!window.queueManager) {
-        window.queueManager = new QueueManager();
-    }
-});
+// ============================================================================
+// What's New / Changelog Dialog
+// ============================================================================
+const APP_CURRENT_VERSION = '1.1.0';
 
-if (document.readyState === "complete" || document.readyState === "interactive") {
+function setupWhatsNewModal() {
+    const modal = document.getElementById('whatsNewModal');
+    const closeBtn = document.getElementById('whatsNewCloseBtn');
+    const versionBtn = document.getElementById('versionBadgeBtn');
+
+    if (!modal) return;
+
+    function openWhatsNew() {
+        modal.classList.remove('hidden');
+    }
+
+    function closeWhatsNew() {
+        modal.classList.add('hidden');
+    }
+
+    if (closeBtn) {
+        closeBtn.addEventListener('click', closeWhatsNew);
+    }
+
+    if (versionBtn) {
+        versionBtn.addEventListener('click', openWhatsNew);
+    }
+
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) closeWhatsNew();
+    });
+
+    window.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape' && !modal.classList.contains('hidden')) {
+            closeWhatsNew();
+        }
+    });
+
+    // Check if user just updated to this version
+    const lastVersion = localStorage.getItem('app_last_seen_version');
+    if (lastVersion && lastVersion !== APP_CURRENT_VERSION) {
+        openWhatsNew();
+    }
+    localStorage.setItem('app_last_seen_version', APP_CURRENT_VERSION);
+}
+
+// Initialize on DOM ready
+let isInitialized = false;
+function initializeApp() {
+    if (isInitialized) return;
+    isInitialized = true;
     setupNavigation();
+    setupWhatsNewModal();
     if (!window.queueManager) {
         window.queueManager = new QueueManager();
     }
 }
+
+document.addEventListener("DOMContentLoaded", initializeApp);
+
+if (document.readyState === "complete" || document.readyState === "interactive") {
+    initializeApp();
+}
+

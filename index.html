@@ -593,7 +593,7 @@
 
             <span>
 
-                YouTube Downloader
+                YouTube Downloader <button id="versionBadgeBtn" class="version-pill" title="View What's New / ما الجديد في هذا التحديث">v1.1.0 ✨</button>
 
             </span>
 
@@ -628,6 +628,50 @@
             <div id="conflictModalMessage" class="custom-modal-message"></div>
             <div id="conflictModalFileName" class="conflict-file-name hidden"></div>
             <div id="conflictModalActions" class="conflict-actions"></div>
+        </div>
+    </div>
+
+    <!-- What's New / Changelog Modal -->
+    <div id="whatsNewModal" class="custom-modal-overlay hidden">
+        <div class="custom-modal-box whats-new-box">
+            <div class="whats-new-header">
+                <div class="whats-new-icon">🚀</div>
+                <div class="whats-new-title-group">
+                    <h3 id="whatsNewTitle" class="whats-new-title">What's New in v1.1.0</h3>
+                    <span class="whats-new-subtitle">الجديد في هذا التحديث</span>
+                </div>
+            </div>
+            <div id="whatsNewContent" class="whats-new-body">
+                <div class="whats-new-item">
+                    <div class="whats-new-item-icon">📋</div>
+                    <div class="whats-new-item-text">
+                        <strong>Download Queue / قائمة الانتظار</strong>
+                        <p>أضف عدة فيديوهات أو قوائم تشغيل للتحميل بالترتيب مع التحكم في عدد التحميلات المتزامنة وحفظ القائمة تلقائياً.</p>
+                    </div>
+                </div>
+                <div class="whats-new-item">
+                    <div class="whats-new-item-icon">⏯️</div>
+                    <div class="whats-new-item-text">
+                        <strong>Pause & Resume / إيقاف واستئناف حقيقي</strong>
+                        <p>إمكانية إيقاف التحميل مؤقتاً واستئنافه من نفس النقطة بدون البدء من الصفر.</p>
+                    </div>
+                </div>
+                <div class="whats-new-item">
+                    <div class="whats-new-item-icon">💬</div>
+                    <div class="whats-new-item-text">
+                        <strong>Improved Subtitles / تحسين الترجمات</strong>
+                        <p>جلب وتحميل الترجمات اليدوية والآلية بسرعة عالية وبدون أخطاء مع توافق كامل بصيغة SRT.</p>
+                    </div>
+                </div>
+                <div class="whats-new-item">
+                    <div class="whats-new-item-icon">🛡️</div>
+                    <div class="whats-new-item-text">
+                        <strong>File Conflict & Accuracy / إدارة التعارض ودقة الأحجام</strong>
+                        <p>خيارات ذكية عند وجود ملف مسبقاً (استبدال / ترقيم / إلغاء) وتحسين حساب الأحجام المقدرة.</p>
+                    </div>
+                </div>
+            </div>
+            <button id="whatsNewCloseBtn" class="custom-modal-btn whats-new-btn">Great / رائع</button>
         </div>
     </div>
 
