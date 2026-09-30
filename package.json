@@ -55,13 +55,20 @@
     ],
     "win": {
       "target": [
-        "portable",
-        "zip"
+        "nsis"
       ],
       "icon": "build/icon.ico",
       "requestedExecutionLevel": "asInvoker",
       "legalTrademarks": "YouTube Playlist Downloader",
       "publisherName": "Mazen Mohamed"
+    },
+    "nsis": {
+      "oneClick": false,
+      "perMachine": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "YouTube Playlist Downloader"
     }
   }
 }
